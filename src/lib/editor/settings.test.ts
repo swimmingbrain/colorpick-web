@@ -45,6 +45,15 @@ describe('mergePreferences', () => {
     expect(merged.panels.bottomTab).toBe('history');
   });
 
+  it('keeps the histogram channels gray alone or colors only, gray when nothing is stored', () => {
+    expect(defaultPreferences().histogram.channels).toEqual(['gray']);
+    expect(mergePreferences({ histogram: { channels: ['b', 'r'] } }).histogram.channels).toEqual(['r', 'b']);
+    expect(mergePreferences({ histogram: { channels: ['r', 'gray'] } }).histogram.channels).toEqual(['gray']);
+    expect(mergePreferences({ histogram: { channels: ['purple'] } }).histogram.channels).toEqual(['gray']);
+    expect(mergePreferences({ histogram: { channels: 'rgb' } }).histogram.channels).toEqual(['gray']);
+    expect(mergePreferences({ histogram: { log: true } }).histogram).toEqual({ channels: ['gray'], log: true });
+  });
+
   it('keeps every frame rate the share offers', () => {
     for (const fps of [2, 5, 10]) expect(mergePreferences({ share: { fps } }).share.fps).toBe(fps);
   });
