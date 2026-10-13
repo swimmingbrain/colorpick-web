@@ -38,6 +38,44 @@ export function withEntry(list: HistoryEntry[], entry: HistoryEntry, limit = HIS
   return [entry, ...list.filter((e) => e.id !== entry.id)].slice(0, limit);
 }
 
+// the longer side of an area thumbnail, in pixels
+export const THUMB_MAX = 160;
+
+// the thumbnail keeps the shape of the area, a small area keeps its size
+export function thumbSize(w: number, h: number, max = THUMB_MAX): { w: number; h: number } {
+  if (!(w > 0) || !(h > 0)) return { w: 1, h: 1 };
+  const k = Math.min(1, max / Math.max(w, h));
+  return { w: Math.max(1, Math.round(w * k)), h: Math.max(1, Math.round(h * k)) };
+}
+
+export interface AreaCapture {
+  rect: NormRect;
+  frame: { w: number; h: number };
+  thumbnail: string;
+  stats: AreaStats;
+}
+
+// a captured area as a history entry, its color is the mean. with a calibration applied the entry keeps how far
+// off the colors were at that time, the hold out error of the fit
+export function areaEntry(capture: AreaCapture, cal: { holdout: { max: number } } | null, now = new Date()): HistoryEntry {
+  const { mean } = capture.stats;
+  return {
+    id: entryId(now.getTime()),
+    kind: 'area',
+    time: now.toISOString(),
+    rgb: clampRgb({ r: mean.r, g: mean.g, b: mean.b }),
+    source: cal ? 'screen corrected' : 'screen',
+    corrected: cal !== null,
+    residual: cal ? cal.holdout.max : null,
+    area: {
+      rect: { ...capture.rect },
+      frame: { ...capture.frame },
+      thumbnail: capture.thumbnail,
+      stats: capture.stats
+    }
+  };
+}
+
 function isObject(v: unknown): v is Record<string, unknown> {
   return typeof v === 'object' && v !== null && !Array.isArray(v);
 }
