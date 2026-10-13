@@ -1,6 +1,8 @@
 <script lang="ts">
   import Panel from '../Panel.svelte';
+  import Histogram from './Histogram.svelte';
   import { hex, type RGB } from '$lib/core/color';
+  import { thousands } from '$lib/core/histogram';
   import { keyName } from '$lib/editor/actions';
   import { preferences } from '$lib/stores/preferences';
   import { capture, selectedEntry, type AreaStats, type PerChannel } from '$lib/stores/session';
@@ -8,8 +10,12 @@
   // the entry picked in the history wins, otherwise the latest capture
   const shown = $derived.by(() => {
     const entry = $selectedEntry;
-    if (entry?.area) return { thumbnail: entry.area.thumbnail, stats: entry.area.stats, corrected: entry.corrected };
-    if ($capture) return { thumbnail: $capture.thumbnail, stats: $capture.stats, corrected: $capture.corrected };
+    if (entry?.area) {
+      return { thumbnail: entry.area.thumbnail, stats: entry.area.stats, corrected: entry.corrected, time: entry.time };
+    }
+    if ($capture) {
+      return { thumbnail: $capture.thumbnail, stats: $capture.stats, corrected: $capture.corrected, time: $capture.time };
+    }
     return null;
   });
   const keys = $derived($preferences.shortcuts);
@@ -20,9 +26,10 @@
     return { r: c.r, g: c.g, b: c.b };
   }
 
-  // 48 000, the thousands apart like the readouts on the stage
-  function count(n: number): string {
-    return Math.round(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+  function when(iso: string): string {
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return '';
+    return `captured ${d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}`;
   }
 
   function rows(s: AreaStats) {
@@ -38,7 +45,8 @@
       { label: 'Min', title: 'The darkest value per channel', color: rgb(s.min), text: '' },
       { label: 'Max', title: 'The brightest value per channel', color: rgb(s.max), text: '' },
       { label: 'Dominant', title: 'The most common color, rounded to 8 steps per channel', color: s.dominant, text: '' },
-      { label: 'Pixels', title: 'How many pixels the area holds', color: null, text: count(s.count) }
+      { label: 'Pixels', title: 'How many pixels the area holds', color: null, text: thousands(s.count) },
+      { label: 'Size', title: 'The width and height of the area in frame pixels', color: null, text: `${s.width} x ${s.height}` }
     ];
   }
 </script>
@@ -52,7 +60,7 @@
     <div class="head">
       <img class="thumb" src={shown.thumbnail} alt="The captured area" />
       <div class="size">
-        <span class="dims">{shown.stats.width} x {shown.stats.height} px</span>
+        <span class="dims">{when(shown.time)}</span>
         <span class="badge" class:corrected={shown.corrected}>{shown.corrected ? 'screen corrected' : 'screen'}</span>
       </div>
     </div>
@@ -71,7 +79,8 @@
         </li>
       {/each}
     </ul>
-    <!-- the histogram of the capture goes under the rows -->
+    <h3 class="section">Histogram</h3>
+    <Histogram stats={shown.stats} />
   {/if}
 </Panel>
 
