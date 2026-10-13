@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  CALIBRATION_KEY,
   CARD,
   applyCalibration,
   buildCard,
@@ -9,8 +10,10 @@ import {
   fitCalibration,
   fromJSON,
   fromLinear,
+  loadCalibration,
   locateCard,
   sampleCard,
+  saveCalibration,
   toJSON,
   toLinear,
   type Calibration,
@@ -378,5 +381,59 @@ describe('json', () => {
     expect(fromJSON({ ...plain, frame: { w: 0, h: 10 } })).toBeNull();
     expect(fromJSON({ ...plain, at: 'yesterday' })).toBeNull();
     expect(fromJSON({ ...plain, clipped: ['red'] })).toBeNull();
+  });
+});
+
+describe('the stored calibration', () => {
+  const f = render({ w: 600, h: 500, scale: 1, x: 30, y: 30, show: captured });
+  const cal = fitCalibration(f, locateCard(f, 1)!);
+
+  function memory() {
+    const items = new Map<string, string>();
+    return {
+      items,
+      getItem: (key: string) => items.get(key) ?? null,
+      setItem: (key: string, value: string) => void items.set(key, value),
+      removeItem: (key: string) => void items.delete(key)
+    };
+  }
+
+  it('comes back the same and corrects the same', () => {
+    const storage = memory();
+    saveCalibration(storage, cal);
+    expect(storage.items.has(CALIBRATION_KEY)).toBe(true);
+    const back = loadCalibration(storage);
+    expect(back).toEqual(cal);
+    expect(correctPixel(back!, 40, 180, 90)).toEqual(correctPixel(cal, 40, 180, 90));
+  });
+
+  it('is gone after a remove', () => {
+    const storage = memory();
+    saveCalibration(storage, cal);
+    saveCalibration(storage, null);
+    expect(storage.items.size).toBe(0);
+    expect(loadCalibration(storage)).toBeNull();
+  });
+
+  it('gives nothing for a broken entry, a full storage or no storage at all', () => {
+    const storage = memory();
+    storage.items.set(CALIBRATION_KEY, '{"version": 1');
+    expect(loadCalibration(storage)).toBeNull();
+    storage.items.set(CALIBRATION_KEY, JSON.stringify({ ...cal, version: 2 }));
+    expect(loadCalibration(storage)).toBeNull();
+    expect(loadCalibration(null)).toBeNull();
+    const full = {
+      ...memory(),
+      setItem: () => {
+        throw new DOMException('full', 'QuotaExceededError');
+      }
+    };
+    expect(() => saveCalibration(full, cal)).not.toThrow();
+    const blocked = {
+      getItem: () => {
+        throw new DOMException('blocked', 'SecurityError');
+      }
+    };
+    expect(loadCalibration(blocked)).toBeNull();
   });
 });
