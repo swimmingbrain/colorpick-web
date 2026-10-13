@@ -35,8 +35,9 @@
     <p>
       The app only sees a screen, a window or a tab after you pick it in your browser's own share dialog, and the
       browser shows that it is being shared. The frames are read right in the tab and never leave the memory of
-      the tab. They are not stored, not recorded and not uploaded to external servers. Sharing ends with the Stop
-      sharing button in the app or the one your browser shows.
+      the tab. They are not recorded and not uploaded to external servers, only the small picture of an area you
+      capture is kept in the history. Sharing ends with the Stop sharing button in the app or the one your browser
+      shows.
     </p>
     <p>
       The eyedropper reads one pixel through the picker your browser has built in and needs no share at all.
@@ -49,12 +50,14 @@
       can be cleared at any time through your browser settings. This is everything the app writes:
     </p>
     <p>
-      <strong>localStorage</strong> holds three keys. <code>brainpick:preferences</code> keeps your settings: the
-      side of the toolbar, the panel sizes, the loupe, the histogram scale and the frame rate of the share.
+      <strong>localStorage</strong> holds four keys. <code>brainpick:preferences</code> keeps your settings: the
+      side of the toolbar, the panel sizes and tabs, the loupe, the channels and the scale of the histogram, the
+      frame rate of the share and the commands you ran last in the palette.
       <code>brainpick:history</code> keeps the colors and areas you choose to keep, up to 500 of them, each with
       its value, the time, where it came from, and for an area a small picture and its statistics.
       <code>brainpick:calibration</code> keeps the correction measured from the calibration card, the frame size
-      it was measured for and the date.
+      it was measured for and the date. <code>brainpick:area</code> keeps where the area rectangle sits on the
+      frame, so it is back after a reload.
     </p>
     <p>
       <strong>Cache Storage</strong> holds the app itself, so it works offline: the files of the build you loaded,
@@ -84,8 +87,8 @@
 
     <h2>Cookies</h2>
     <p>
-      brainPICK does not use cookies, and there is no account to sign in to. The settings, the history and the
-      calibration listed above are stored in localStorage.
+      brainPICK does not use cookies, and there is no account to sign in to. The settings, the history, the
+      calibration and the area listed above are stored in localStorage.
     </p>
 
     <h2>Changes</h2>
