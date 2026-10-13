@@ -1,3 +1,6 @@
+import { normalizeChannels } from '$lib/core/histogram';
+import type { Channel } from '$lib/core/stats';
+
 // the preferences: their defaults, how a stored copy is read back and where it is kept
 
 export const STORAGE_KEY = 'brainpick:preferences';
@@ -24,7 +27,8 @@ export interface Preferences {
     loupe: boolean;
   };
   histogram: {
-    // what a new capture starts with, the chip in the panel changes it for the moment
+    // gray alone or some of the color channels, the chips above the histogram change it
+    channels: Channel[];
     log: boolean;
   };
   share: {
@@ -46,7 +50,7 @@ export function defaultPreferences(): Preferences {
   return {
     toolbar: { side: 'left' },
     stage: { loupe: true },
-    histogram: { log: false },
+    histogram: { channels: ['gray'], log: false },
     share: { fps: 5 },
     panels: { dockWidth: 280, dockSplit: 0.55, topTab: 'color', bottomTab: 'history' },
     shortcuts: {},
@@ -86,6 +90,7 @@ export function mergePreferences(stored: unknown): Preferences {
 
   p.toolbar.side = oneOf(p.toolbar.side, ['left', 'right'], 'left');
   p.share.fps = oneOf(p.share.fps, FRAME_RATES, defaults.share.fps);
+  p.histogram.channels = normalizeChannels(p.histogram.channels);
 
   const panels = p.panels;
   panels.dockWidth = clamp(panels.dockWidth, MIN_DOCK, MAX_DOCK);
