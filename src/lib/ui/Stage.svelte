@@ -24,6 +24,7 @@
     handlePoints,
     hitRect,
     moveRect,
+    nudge,
     resizeRect,
     spanRect,
     toNorm,
@@ -259,10 +260,17 @@
   }
 
   function onkeydown(e: KeyboardEvent) {
-    if ($activeTool === 'pick' && e.key === 'Enter' && cross) {
+    if (!editing && e.key === 'Enter' && cross) {
       e.preventDefault();
       keepPixel({ x: cross.x + 0.5, y: cross.y + 0.5 });
+      return;
     }
+    // the arrows move the area a frame pixel at a time, ten with shift, so it can be placed without a mouse
+    if (!editing || !rect || !size || drag || e.ctrlKey || e.metaKey || e.altKey) return;
+    const next = nudge(rect, e.key, e.shiftKey, size);
+    if (!next) return;
+    e.preventDefault();
+    area.set(toNorm(next, size));
   }
 
   // the color panel keeps the last value, it is just not live anymore
@@ -425,7 +433,7 @@
             bind:this={overlay}
             tabindex="0"
             aria-label={editing
-              ? 'Shared screen, drag to draw the area, drag a handle to resize it'
+              ? 'Shared screen, drag to draw the area, arrow keys move it a pixel, with Shift ten'
               : 'Shared screen, click to keep the pixel under the pointer'}
             {onclick}
             {onkeydown}
