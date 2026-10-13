@@ -47,7 +47,8 @@
   let colors = $state({
     deep: '#111113',
     grid: '#2e2e33',
-    highlight: 'rgba(255, 255, 255, 0.1)',
+    highlight: 'rgba(255, 255, 255, 0.12)',
+    cursor: '#d4d4d8',
     fill: { r: '#5b2c30', g: '#2a5341', b: '#2c4664', gray: '#3b3b45' } as Record<Channel, string>,
     edge: { r: '#d9666e', g: '#5fb98a', b: '#5b8fd9', gray: '#a1a1aa' } as Record<Channel, string>
   });
@@ -64,7 +65,14 @@
       fill[c] = token(`--channel-${TOKENS[c]}`, fill[c]);
       edge[c] = token(`--channel-${TOKENS[c]}-edge`, edge[c]);
     }
-    colors = { ...colors, deep: token('--bg-deep', colors.deep), grid: token('--border', colors.grid), fill, edge };
+    colors = {
+      ...colors,
+      deep: token('--bg-deep', colors.deep),
+      grid: token('--border', colors.grid),
+      cursor: token('--text-primary', colors.cursor),
+      fill,
+      edge
+    };
   });
 
   function draw(ctx: CanvasRenderingContext2D, w: number, h: number) {
@@ -126,11 +134,14 @@
     }
     ctx.setLineDash([]);
 
+    // a bin is a pixel or two wide, the highlight is wider and has a light line in its middle so it can be found
     if (active !== null) {
       const s = binSpan(active, w);
-      const pad = Math.max(0, Math.round(dpr) - 1);
+      const pad = Math.max(2 * px, Math.round(3 * dpr) - Math.floor(s.w / 2));
       ctx.fillStyle = colors.highlight;
       ctx.fillRect(s.x - pad, 0, s.w + 2 * pad, base);
+      ctx.fillStyle = colors.cursor;
+      ctx.fillRect(s.x + Math.floor((s.w - px) / 2), 0, px, base);
     }
 
     ctx.fillStyle = colors.grid;
