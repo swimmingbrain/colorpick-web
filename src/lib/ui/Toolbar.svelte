@@ -5,7 +5,7 @@
   import { hex } from '$lib/core/color';
   import { activeTool } from '$lib/stores/app';
   import { preferences } from '$lib/stores/preferences';
-  import { area, livePreview, share, shown as color } from '$lib/stores/session';
+  import { area, calibrating, livePreview, share, shown as color } from '$lib/stores/session';
 
   const tools = TOOL_IDS.map((id) => TOOL_INFO[id]);
   const keys = $derived($preferences.shortcuts);
@@ -17,6 +17,8 @@
   function pressed(tool: ToolInfo): boolean | undefined {
     if (tool.kind === 'mode') return $activeTool === tool.id;
     if (tool.kind === 'toggle') return gate.sharing && $livePreview;
+    // calibrate stays lit while the card is on the stage
+    if (tool.id === 'calibrate') return $calibrating;
     return undefined;
   }
 
