@@ -765,3 +765,23 @@ export function fromJSON(input: unknown): Calibration | null {
     at: c.at
   };
 }
+
+export const CALIBRATION_KEY = 'brainpick:calibration';
+
+// a private window or a broken entry gives no calibration
+export function loadCalibration(storage: Pick<Storage, 'getItem'> | null): Calibration | null {
+  if (!storage) return null;
+  try {
+    return fromJSON(storage.getItem(CALIBRATION_KEY));
+  } catch {
+    return null;
+  }
+}
+
+export function saveCalibration(storage: Pick<Storage, 'setItem' | 'removeItem'> | null, cal: Calibration | null) {
+  if (!storage) return;
+  try {
+    if (cal) storage.setItem(CALIBRATION_KEY, toJSON(cal));
+    else storage.removeItem(CALIBRATION_KEY);
+  } catch {}
+}

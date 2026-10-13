@@ -6,11 +6,14 @@ const KEYS: Record<string, string> = { 'share.toggle': 'S', 'tool.area': 'A', 't
 const keyOf = (id: string) => KEYS[id] ?? '';
 
 function cal(w: number, h: number, max = 1.23): Calibration {
+  const curve = { x: [0, 255], y: [0, 255] };
   return {
     version: 1,
+    curves: [curve, curve, curve],
     matrix: [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0],
     residual: { mean: 0.4, max: 0.9 },
     holdout: { mean: 0.6, max },
+    clipped: [],
     frame: { w, h },
     at: '2026-10-13T20:00:00.000Z'
   };

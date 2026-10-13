@@ -3,6 +3,7 @@ import { browser } from '$app/environment';
 import type { RGB } from '$lib/core/color';
 import { loadHistory, saveHistory, withEntry } from '$lib/core/history';
 import { loadArea, saveArea } from '$lib/core/area';
+import { loadCalibration, saveCalibration, type Calibration } from '$lib/core/calibrate';
 import type { PlainStats } from '$lib/core/stats';
 
 // what the app knows about the share and what was read from it. frames stay in the capture module,
@@ -33,22 +34,27 @@ export const frame = writable<FrameInfo | null>(null);
 // the preview runs while sharing unless it is switched off, area and capture work without it
 export const livePreview = writable(true);
 
-export interface ErrorSummary {
-  mean: number;
-  max: number;
+export type { Calibration, ErrorSummary } from '$lib/core/calibrate';
+
+// the correction measured from the card, kept in this browser until it is removed or measured again
+function createCalibration() {
+  const store = writable<Calibration | null>(loadCalibration(storage()));
+  return {
+    subscribe: store.subscribe,
+    set(cal: Calibration | null) {
+      store.set(cal);
+      saveCalibration(storage(), cal);
+    }
+  };
 }
 
-// a correction measured from the calibration card, kept for the frame size it was measured on
-export interface Calibration {
-  version: 1;
-  matrix: number[];
-  residual: ErrorSummary;
-  holdout: ErrorSummary;
-  frame: { w: number; h: number };
-  at: string;
-}
+export const calibration = createCalibration();
 
-export const calibration = writable<Calibration | null>(null);
+// the calibration that applies now, only while the share has the frame size it was measured on
+export const activeCalibration = derived([calibration, share], ([$cal, $share]) =>
+  $cal && $share && $cal.frame.w === $share.width && $cal.frame.h === $share.height ? $cal : null
+);
+
 // the card is on the stage while this is true
 export const calibrating = writable(false);
 
