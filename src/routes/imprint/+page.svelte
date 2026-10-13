@@ -39,12 +39,12 @@
       The contents of this website have been created with the utmost care. However, we cannot guarantee
       the accuracy, completeness, or timeliness of the content. As a service provider, we are responsible
       for our own content on these pages under general law. However, we are not obligated to monitor
-      transmitted or stored third-party information or to investigate circumstances that indicate illegal activity.
+      transmitted or stored third party information or to investigate circumstances that indicate illegal activity.
     </p>
 
     <h2>Liability for Links</h2>
     <p>
-      This website contains links to external third-party websites over whose content we have no influence.
+      This website contains links to external third party websites over whose content we have no influence.
       Therefore, we cannot accept any liability for this external content. The respective provider or operator
       of the pages is always responsible for the content of the linked pages.
     </p>

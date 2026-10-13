@@ -31,8 +31,8 @@
 
     <h2>Description of Service</h2>
     <p>
-      brainPICK is a free, browser-based color picker that reads the screen you share right in your browser and
-      keeps the colors you pick locally on your device. The service is provided as-is without guarantees of
+      brainPICK is a free color picker that runs in your browser, reads the screen you share right there and
+      keeps the colors you pick locally on your device. The service is provided as is, without guarantees of
       availability or uptime.
     </p>
 
@@ -60,7 +60,7 @@
     <p>
       brainPICK is provided "as is" and "as available" without warranties of any kind, whether express
       or implied, including but not limited to implied warranties of merchantability, fitness for a
-      particular purpose, or non-infringement.
+      particular purpose, or noninfringement.
     </p>
 
     <h2>Limitation of Liability</h2>

@@ -26,7 +26,7 @@
 
     <h2>Overview</h2>
     <p>
-      brainPICK is a browser-based color picker for the screen. The screen you share is read in your browser, and
+      brainPICK is a color picker for the screen that runs in your browser. The screen you share is read there, and
       the colors you keep are stored in your browser on your device. We do not collect, store, or transmit your
       screen, your colors or personal data to any server.
     </p>
@@ -69,7 +69,7 @@
       We do not use tracking scripts, analytics services, or advertising networks.
     </p>
 
-    <h2>Third-Party Services</h2>
+    <h2>Third Party Services</h2>
     <p>
       <strong>Fonts.</strong> The fonts of the interface are part of the app and are served with it from the same
       site. No font service is contacted.
