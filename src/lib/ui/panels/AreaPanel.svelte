@@ -14,7 +14,8 @@
       return { thumbnail: entry.area.thumbnail, stats: entry.area.stats, corrected: entry.corrected, time: entry.time };
     }
     if ($capture) {
-      return { thumbnail: $capture.thumbnail, stats: $capture.stats, corrected: $capture.corrected, time: $capture.time };
+      const { thumbnail, stats, corrected, time } = $capture;
+      return { thumbnail, stats, corrected, time };
     }
     return null;
   });
@@ -55,7 +56,8 @@
   icon="area"
   empty={shown
     ? undefined
-    : `Draw an area on the shared screen${areaKey ? ` (${areaKey})` : ''} and capture it${captureKey ? ` (${captureKey})` : ''} to read its colors.`}>
+    : `Draw an area on the shared screen${areaKey ? ` (${areaKey})` : ''} and capture it` +
+      `${captureKey ? ` (${captureKey})` : ''} to read its colors.`}>
   {#if shown}
     <div class="head">
       <img class="thumb" src={shown.thumbnail} alt="The captured area" />

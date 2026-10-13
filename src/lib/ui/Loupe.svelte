@@ -36,7 +36,8 @@
     small ??= document.createElement('canvas');
     small.width = pixels.width;
     small.height = pixels.height;
-    small.getContext('2d')?.putImageData(new ImageData(new Uint8ClampedArray(pixels.data), pixels.width, pixels.height), 0, 0);
+    const img = new ImageData(new Uint8ClampedArray(pixels.data), pixels.width, pixels.height);
+    small.getContext('2d')?.putImageData(img, 0, 0);
 
     const side = Math.round(SIDE * dpr);
     if (canvas.width !== side) canvas.width = side;

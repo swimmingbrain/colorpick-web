@@ -67,7 +67,10 @@ export function toolHint(mode: Mode, s: ToolState, keyOf: (command: string) => s
 export type CalibrationStatus = 'none' | 'ready' | 'other size';
 
 // a calibration only holds for the frame size it was measured on
-export function calibrationStatus(cal: Calibration | null, frame: { width: number; height: number } | null): CalibrationStatus {
+export function calibrationStatus(
+  cal: Calibration | null,
+  frame: { width: number; height: number } | null
+): CalibrationStatus {
   if (!cal) return 'none';
   if (frame && (cal.frame.w !== frame.width || cal.frame.h !== frame.height)) return 'other size';
   return 'ready';

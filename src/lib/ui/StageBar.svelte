@@ -60,7 +60,9 @@
         class:on={values === 'corrected'}
         aria-checked={values === 'corrected'}
         disabled={!sharing || $activeCalibration === null}
-        title={$activeCalibration ? 'Hover values with the calibration applied' : 'Calibrate first to correct the values'}
+        title={$activeCalibration
+          ? 'Hover values with the calibration applied'
+          : 'Calibrate first to correct the values'}
         onclick={() => valueMode.set('corrected')}>Corrected</button>
     </div>
     {#if sharing && $share}

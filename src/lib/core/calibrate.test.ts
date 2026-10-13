@@ -99,7 +99,11 @@ function inv3(m: number[]): number[] {
   const B = -(d * i - f * g);
   const C = d * h - e * g;
   const det = a * A + b * B + c * C;
-  const adj = [A, -(b * i - c * h), b * f - c * e, B, a * i - c * g, -(a * f - c * d), C, -(a * h - b * g), a * e - b * d];
+  const adj = [
+    A, -(b * i - c * h), b * f - c * e,
+    B, a * i - c * g, -(a * f - c * d),
+    C, -(a * h - b * g), a * e - b * d
+  ];
   return adj.map((v) => v / det);
 }
 
@@ -109,7 +113,8 @@ function mul3(m: number[], v: Triple): Triple {
 
 const TO_MONITOR = (() => {
   const a = inv3(MONITOR);
-  const at = (r: number, c: number) => a[3 * r] * SRGB_D50[c] + a[3 * r + 1] * SRGB_D50[3 + c] + a[3 * r + 2] * SRGB_D50[6 + c];
+  const at = (r: number, c: number) =>
+    a[3 * r] * SRGB_D50[c] + a[3 * r + 1] * SRGB_D50[3 + c] + a[3 * r + 2] * SRGB_D50[6 + c];
   return [0, 1, 2].flatMap((r) => [0, 1, 2].map((c) => at(r, c)));
 })();
 
@@ -183,7 +188,13 @@ describe('locateCard', () => {
       [2, 13, 17]
     ];
     for (const [scale, x, y] of cases) {
-      const f = render({ w: Math.ceil(CARD.width * scale + 400), h: Math.ceil(CARD.height * scale + 380), scale, x, y });
+      const f = render({
+        w: Math.ceil(CARD.width * scale + 400),
+        h: Math.ceil(CARD.height * scale + 380),
+        scale,
+        x,
+        y
+      });
       near(locateCard(f, scale), x, y, scale);
     }
   });

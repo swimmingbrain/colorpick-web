@@ -32,7 +32,9 @@
       <a href="https://github.com/swimmingbrain/colorpick-web" target="_blank" rel="noopener" class="with-icon">
         <Icon name="github" size={12} /> GitHub
       </a>
-      <a href="https://github.com/swimmingbrain/colorpick-web/blob/main/LICENSE" target="_blank" rel="noopener">MIT license</a>
+      <a href="https://github.com/swimmingbrain/colorpick-web/blob/main/LICENSE" target="_blank" rel="noopener">
+        MIT license
+      </a>
     </div>
     <h3 class="section">Stands on</h3>
     <ul class="libs">
@@ -43,7 +45,9 @@
         </li>
       {/each}
     </ul>
-    <p class="made">made with &hearts; by <a href="https://swimmingbrain.dev" target="_blank" rel="noopener">Braian Plaku</a></p>
+    <p class="made">
+      made with &hearts; by <a href="https://swimmingbrain.dev" target="_blank" rel="noopener">Braian Plaku</a>
+    </p>
   </div>
   {#snippet footer()}
     <button class="dialog-btn" onclick={onclose}>Close</button>

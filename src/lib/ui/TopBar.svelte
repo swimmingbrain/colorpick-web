@@ -1,7 +1,16 @@
 <script lang="ts">
   import Logo from './Logo.svelte';
   import Icon from '$lib/icons/Icon.svelte';
-  import { REPO, calibrate, keyName, openAbout, openPalette, openPreferences, tip, toggleShare } from '$lib/editor/actions';
+  import {
+    REPO,
+    calibrate,
+    keyName,
+    openAbout,
+    openPalette,
+    openPreferences,
+    tip,
+    toggleShare
+  } from '$lib/editor/actions';
   import { lockOf, lockText } from '$lib/editor/tools';
   import { preferences } from '$lib/stores/preferences';
   import { area, share } from '$lib/stores/session';
@@ -35,7 +44,9 @@
       aria-disabled={calibrateLock !== null}
       onclick={calibrate}
       aria-label="Calibrate"
-      title={calibrateLock ? lockText(calibrateLock, (id) => keyName(id, keys)) : tip('Calibrate', 'tool.calibrate', keys)}>
+      title={calibrateLock
+        ? lockText(calibrateLock, (id) => keyName(id, keys))
+        : tip('Calibrate', 'tool.calibrate', keys)}>
       <Icon name="calibrate" size={14} />
       <span>Calibrate</span>
     </button>

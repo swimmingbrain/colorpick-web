@@ -59,7 +59,9 @@ describe('mergePreferences', () => {
   });
 
   it('puts a narrow dock back to the least width and keeps the tab of each group', () => {
-    const merged = mergePreferences({ panels: { dockWidth: 40, dockSplit: 0.4, topTab: 'area', bottomTab: 'calibration' } });
+    const merged = mergePreferences({
+      panels: { dockWidth: 40, dockSplit: 0.4, topTab: 'area', bottomTab: 'calibration' }
+    });
     expect(merged.panels.dockWidth).toBe(220);
     expect(merged.panels.dockSplit).toBe(0.4);
     expect(merged.panels.topTab).toBe('area');

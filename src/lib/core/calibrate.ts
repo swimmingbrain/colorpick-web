@@ -664,7 +664,9 @@ function tablesOf(cal: Calibration): Tables {
   let t = tables.get(cal);
   if (!t) {
     const lin = cal.curves.map((c) => Float64Array.from({ length: 256 }, (_, v) => toLinear(curveAt(c, v))));
-    const gray = [0, 1, 2].map((c) => Uint8Array.from({ length: 256 }, (_, v) => Math.round(grayOut(cal.curves, c, v))));
+    const gray = [0, 1, 2].map((c) =>
+      Uint8Array.from({ length: 256 }, (_, v) => Math.round(grayOut(cal.curves, c, v)))
+    );
     const keys = new Int32Array(1 << CACHE_BITS).fill(-1);
     t = { lin, gray, m: cal.matrix, keys, values: new Int32Array(1 << CACHE_BITS) };
     tables.set(cal, t);

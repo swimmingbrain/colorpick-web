@@ -164,7 +164,15 @@ export function keepColor(
   residual: number | null = null,
   raw: RGB | null = null
 ) {
-  const entry: HistoryEntry = { id: entryId(), kind: 'pixel', time: new Date().toISOString(), rgb, source, corrected, residual };
+  const entry: HistoryEntry = {
+    id: entryId(),
+    kind: 'pixel',
+    time: new Date().toISOString(),
+    rgb,
+    source,
+    corrected,
+    residual
+  };
   addEntry(entry);
   selection.set(entry.id);
   current.set({ rgb, raw, source, live: false, id: entry.id });
@@ -233,7 +241,10 @@ export async function captureArea() {
     const cal = get(activeCalibration);
     if (cal) applyCalibration(cal, img.data);
     const stats = toPlain(analyze(img));
-    const entry = areaEntry({ rect: norm, frame: { w: info.width, h: info.height }, thumbnail: thumbnail(img), stats }, cal);
+    const entry = areaEntry(
+      { rect: norm, frame: { w: info.width, h: info.height }, thumbnail: thumbnail(img), stats },
+      cal
+    );
     capture.set({ thumbnail: entry.area!.thumbnail, stats, corrected: entry.corrected, time: entry.time });
     addEntry(entry);
     selection.set(entry.id);
@@ -360,10 +371,11 @@ export function exportCsv() {
 export function clearHistory() {
   if (historyEmpty()) return;
   const count = get(history).length;
+  const leaves = count === 1 ? 'The entry leaves' : `All ${count} entries leave`;
   dialog.set({
     kind: 'confirm',
     title: 'Clear history',
-    message: `${count === 1 ? 'The entry leaves' : `All ${count} entries leave`} this browser. Export the history first if you want to keep it.`,
+    message: `${leaves} this browser. Export the history first if you want to keep it.`,
     confirm: 'Clear history',
     danger: true,
     onconfirm: clearEntries

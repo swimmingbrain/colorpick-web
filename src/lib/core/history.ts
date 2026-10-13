@@ -57,7 +57,11 @@ export interface AreaCapture {
 
 // a captured area as a history entry, its color is the mean. with a calibration applied the entry keeps how far
 // off the colors were at that time, the hold out error of the fit
-export function areaEntry(capture: AreaCapture, cal: { holdout: { max: number } } | null, now = new Date()): HistoryEntry {
+export function areaEntry(
+  capture: AreaCapture,
+  cal: { holdout: { max: number } } | null,
+  now = new Date()
+): HistoryEntry {
   const { mean } = capture.stats;
   return {
     id: entryId(now.getTime()),

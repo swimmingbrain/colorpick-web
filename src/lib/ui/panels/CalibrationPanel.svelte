@@ -64,7 +64,9 @@
       aria-disabled={lock !== null || $calibrating}
       title={lock ? lockText(lock, (id) => keyName(id, keys)) : tip('Calibrate', 'tool.calibrate', keys)}
       onclick={calibrate}>{$calibrating ? 'Calibrating...' : $calibration ? 'Calibrate again' : 'Calibrate'}</button>
-    <button class="small-btn" disabled={$calibration === null || $calibrating} onclick={removeCalibration}>Remove</button>
+    <button class="small-btn" disabled={$calibration === null || $calibrating} onclick={removeCalibration}>
+      Remove
+    </button>
   </div>
   <p class="help">
     The card is shown on the stage for a moment and read back through the share, the difference becomes the

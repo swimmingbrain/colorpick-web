@@ -178,7 +178,8 @@
     if (!px || !rgb) return;
     lens = block(latest, px.x, px.y);
     const was = $pointer;
-    const same = was && was.x === px.x && was.y === px.y && was.rgb.r === rgb.r && was.rgb.g === rgb.g && was.rgb.b === rgb.b;
+    const same =
+      was && was.x === px.x && was.y === px.y && was.rgb.r === rgb.r && was.rgb.g === rgb.g && was.rgb.b === rgb.b;
     const cal = $activeCalibration;
     if (same && $current?.live && ($current.raw !== null) === (cal !== null)) return;
     // the status bar keeps the raw value, the color panel gets the corrected one when a calibration holds
@@ -494,12 +495,21 @@
         bounds={{ w: stageW, h: stageH }} />
     {/if}
     {#if $calibrating}
-      <!-- plain boxes at whole css pixels, no transform, opacity or anything on top, so the share sees them as drawn -->
-      <div class="calibration" style="background: {CARD.background}" role="img" aria-label="The calibration card, escape cancels">
+      <!-- plain boxes at whole css pixels, no transform, opacity or anything on top, so the share sees them
+           as drawn -->
+      <div
+        class="calibration"
+        style="background: {CARD.background}"
+        role="img"
+        aria-label="The calibration card, escape cancels">
         <div
           class="card"
           data-calibration-card
-          style="left: {cardAt.x}px; top: {cardAt.y}px; width: {CARD_LAYOUT.width}px; height: {CARD_LAYOUT.height}px; background: {CARD_LAYOUT.light}">
+          style:left="{cardAt.x}px"
+          style:top="{cardAt.y}px"
+          style:width="{CARD_LAYOUT.width}px"
+          style:height="{CARD_LAYOUT.height}px"
+          style:background={CARD_LAYOUT.light}>
           {#each [CARD_LAYOUT.inner, ...CARD_LAYOUT.dark, ...CARD_LAYOUT.patches] as b, i (i)}
             <div style="left: {b.x}px; top: {b.y}px; width: {b.w}px; height: {b.h}px; background: {b.color}"></div>
           {/each}

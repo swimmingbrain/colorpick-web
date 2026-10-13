@@ -54,7 +54,12 @@ function area(id: string, minute = 0): HistoryEntry {
     source: 'screen corrected',
     corrected: true,
     residual: 1.2,
-    area: { rect: { x: 0.1, y: 0.2, w: 0.3, h: 0.4 }, frame: { w: 1920, h: 1080 }, thumbnail: 'data:image/png;base64,AA', stats: stats() }
+    area: {
+      rect: { x: 0.1, y: 0.2, w: 0.3, h: 0.4 },
+      frame: { w: 1920, h: 1080 },
+      thumbnail: 'data:image/png;base64,AA',
+      stats: stats()
+    }
   };
 }
 
@@ -166,7 +171,10 @@ describe('history exports', () => {
   });
 
   it('writes one csv row per entry with the area columns empty for a pixel', () => {
-    const lines = historyCsv([area('a', 2), pixel('b', 1, { residual: 0.8, corrected: true, source: 'screen corrected' })])
+    const lines = historyCsv([
+      area('a', 2),
+      pixel('b', 1, { residual: 0.8, corrected: true, source: 'screen corrected' })
+    ])
       .trimEnd()
       .split('\n');
     expect(lines[0]).toBe(CSV_COLUMNS.join(','));

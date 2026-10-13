@@ -76,7 +76,13 @@
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <div class="backdrop" onclick={onclose} {onkeydown}>
   <!-- svelte-ignore a11y_click_events_have_key_events -->
-  <div class="palette" role="dialog" aria-modal="true" aria-label="Command palette" tabindex="-1" onclick={(e) => e.stopPropagation()}>
+  <div
+    class="palette"
+    role="dialog"
+    aria-modal="true"
+    aria-label="Command palette"
+    tabindex="-1"
+    onclick={(e) => e.stopPropagation()}>
     <div class="search">
       <Icon name="search" size={14} />
       <input

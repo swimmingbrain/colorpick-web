@@ -20,13 +20,17 @@
       {#if $shown.live}<span class="tag">live</span>{/if}
     </div>
     <div class="hex-row">
-      <button class="hex" title={tip('Copy the hex', 'edit.copy-hex', keys)} onclick={copyHex}>{hex($shown.rgb)}</button>
+      <button class="hex" title={tip('Copy the hex', 'edit.copy-hex', keys)} onclick={copyHex}>
+        {hex($shown.rgb)}
+      </button>
       <span class="badge" class:corrected={$shown.source === 'screen corrected'}>{$shown.source}</span>
     </div>
     {#if $shown.alt}
       <p
         class="raw"
-        title={$shown.alt.label === 'raw' ? 'What the share delivered before the calibration' : 'The value with the calibration applied'}>
+        title={$shown.alt.label === 'raw'
+          ? 'What the share delivered before the calibration'
+          : 'The value with the calibration applied'}>
         {$shown.alt.label}
         {hex($shown.alt.rgb)}, {rgbText($shown.alt.rgb)}
       </p>

@@ -19,7 +19,14 @@
 
   let panel = $state<HTMLDivElement | null>(null);
 
-  const FOCUSABLE = 'a[href], button:not(:disabled), input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [tabindex]:not([tabindex="-1"])';
+  const FOCUSABLE = [
+    'a[href]',
+    'button:not(:disabled)',
+    'input:not(:disabled)',
+    'select:not(:disabled)',
+    'textarea:not(:disabled)',
+    '[tabindex]:not([tabindex="-1"])'
+  ].join(', ');
 
   function focusable(): HTMLElement[] {
     if (!panel) return [];
@@ -62,7 +69,8 @@
 
   // the button that opened the dialog gets the focus back when it closes. it is taken before the
   // effect above moves the focus in
-  const before = typeof document !== 'undefined' && document.activeElement instanceof HTMLElement ? document.activeElement : null;
+  const before =
+    typeof document !== 'undefined' && document.activeElement instanceof HTMLElement ? document.activeElement : null;
   onMount(() => () => {
     if (before?.isConnected) before.focus();
   });

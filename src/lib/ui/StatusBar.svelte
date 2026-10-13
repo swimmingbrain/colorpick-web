@@ -32,9 +32,13 @@
   </div>
 
   <div class="right">
-    <span class="status-item" class:live={$share !== null}>{$share ? `${$share.width} x ${$share.height}` : 'not sharing'}</span>
+    <span class="status-item" class:live={$share !== null}>
+      {$share ? `${$share.width} x ${$share.height}` : 'not sharing'}
+    </span>
     <span class="sep"></span>
-    <span class="status-item" title={status === 'other size' ? 'The stored calibration is for another frame size' : undefined}>
+    <span
+      class="status-item"
+      title={status === 'other size' ? 'The stored calibration is for another frame size' : undefined}>
       {calibrated}
     </span>
     {#if $pointer}

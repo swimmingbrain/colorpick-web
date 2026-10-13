@@ -103,7 +103,15 @@ export interface View {
 // fit puts the whole frame on the stage, actual gives every frame pixel one device pixel
 export function fitView(frame: Size, stage: Size, zoom: Zoom, dpr = 1, margin = STAGE_MARGIN): View {
   if (frame.width <= 0 || frame.height <= 0 || stage.width <= 0 || stage.height <= 0) {
-    return { x: 0, y: 0, w: 0, h: 0, scale: 1, contentW: Math.max(0, stage.width), contentH: Math.max(0, stage.height) };
+    return {
+      x: 0,
+      y: 0,
+      w: 0,
+      h: 0,
+      scale: 1,
+      contentW: Math.max(0, stage.width),
+      contentH: Math.max(0, stage.height)
+    };
   }
   let scale: number;
   if (zoom === 'actual') {
@@ -133,7 +141,12 @@ export function pixelUnder(p: Point, frame: Size): Point | null {
 }
 
 // the loupe sits below right of the pointer and flips to the other side where the stage ends
-export function loupeSpot(pointer: Point, box: { w: number; h: number }, bounds: { w: number; h: number }, gap = 18): Point {
+export function loupeSpot(
+  pointer: Point,
+  box: { w: number; h: number },
+  bounds: { w: number; h: number },
+  gap = 18
+): Point {
   const pad = 4;
   let x = pointer.x + gap;
   let y = pointer.y + gap;

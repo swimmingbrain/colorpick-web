@@ -92,7 +92,8 @@ async function handleDefault(request: Request, url: URL): Promise<Response> {
     // a page comes from this build, the kept older build must not win
     if (request.mode === 'navigate') {
       const app = await openCache(APP_CACHE);
-      const page = (await app?.match(url.pathname).catch(() => undefined)) || (await app?.match('/').catch(() => undefined));
+      const page =
+        (await app?.match(url.pathname).catch(() => undefined)) || (await app?.match('/').catch(() => undefined));
       if (page) return page;
     }
     const cached = await caches.match(request).catch(() => undefined);

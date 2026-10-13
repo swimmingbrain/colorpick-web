@@ -46,7 +46,11 @@
   });
 </script>
 
-<Dialog title="Keyboard shortcuts" description="The keys the editor listens to, as they are set now." width={760} {onclose}>
+<Dialog
+  title="Keyboard shortcuts"
+  description="The keys the editor listens to, as they are set now."
+  width={760}
+  {onclose}>
   <div class="columns">
     {#each groups as group (group.name)}
       <section class="group">

@@ -31,7 +31,10 @@
 
     <h2>Contact</h2>
     <p>
-      GitHub: <a href="https://github.com/swimmingbrain/colorpick-web" target="_blank" rel="noopener">swimmingbrain/colorpick-web</a>
+      GitHub:
+      <a href="https://github.com/swimmingbrain/colorpick-web" target="_blank" rel="noopener">
+        swimmingbrain/colorpick-web
+      </a>
     </p>
 
     <h2>Liability for Content</h2>
