@@ -2,9 +2,11 @@ import { get } from 'svelte/store';
 import { activeTool, addToast, dialog, zoom } from '$lib/stores/app';
 import { preferences, resetParts, setGroup } from '$lib/stores/preferences';
 import {
+  activeCalibration,
   addEntry,
   area,
   calibration,
+  capture,
   clearEntries,
   current,
   frame,
@@ -20,7 +22,11 @@ import {
 } from '$lib/stores/session';
 import { hex, parseHex, rgbCss, type RGB } from '$lib/core/color';
 import { onEnded, shareSupported, startShare, stopShare, trackSettings } from '$lib/core/share';
-import { entryId, historyCsv, historyJson } from '$lib/core/history';
+import { areaEntry, entryId, historyCsv, historyJson, thumbSize } from '$lib/core/history';
+import { toPixels } from '$lib/core/area';
+import { grabRegion } from '$lib/core/frames';
+import { applyCalibration } from '$lib/core/calibrate';
+import { analyze, toPlain } from '$lib/core/stats';
 import { calibrationStatus, lockOf, lockText, type ToolId } from './tools';
 import { keyLabel } from './keys';
 import type { ToolbarSide } from './settings';
@@ -175,9 +181,51 @@ export function drawArea() {
   if (unlocked('area')) activeTool.set('area');
 }
 
-// reading the area needs the statistics, until they are there capture says so
-export function captureArea() {
-  if (unlocked('capture')) addToast('Capture comes with the statistics');
+// a jpeg of the area small enough for local storage, the pixels go through one canvas at full size first
+function thumbnail(img: ImageData): string {
+  const size = thumbSize(img.width, img.height);
+  const full = document.createElement('canvas');
+  full.width = img.width;
+  full.height = img.height;
+  full.getContext('2d')?.putImageData(img, 0, 0);
+  const small = document.createElement('canvas');
+  small.width = size.w;
+  small.height = size.h;
+  const ctx = small.getContext('2d');
+  if (!ctx) return '';
+  ctx.imageSmoothingQuality = 'high';
+  ctx.drawImage(full, 0, 0, size.w, size.h);
+  return small.toDataURL('image/jpeg', 0.85);
+}
+
+let capturing = false;
+
+// reads the area from the newest frame, corrects it when a calibration holds for this frame size and keeps the
+// statistics in the history
+export async function captureArea() {
+  if (!unlocked('capture') || capturing) return;
+  const info = get(share);
+  const norm = get(area);
+  if (!info || !norm) return;
+  capturing = true;
+  try {
+    const img = await grabRegion(toPixels(norm, info));
+    if (!img) {
+      addToast('The area could not be read, try again in a moment', 'error', 5000);
+      return;
+    }
+    const cal = get(activeCalibration);
+    if (cal) applyCalibration(cal, img.data);
+    const stats = toPlain(analyze(img));
+    const entry = areaEntry({ rect: norm, frame: { w: info.width, h: info.height }, thumbnail: thumbnail(img), stats }, cal);
+    capture.set({ thumbnail: entry.area!.thumbnail, stats, corrected: entry.corrected, time: entry.time });
+    addEntry(entry);
+    selection.set(entry.id);
+    setGroup('panels', { topTab: 'area' });
+    addToast('Area captured', 'success', 2000);
+  } finally {
+    capturing = false;
+  }
 }
 
 export function toggleLive() {
