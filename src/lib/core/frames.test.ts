@@ -1,5 +1,15 @@
 import { describe, expect, it } from 'vitest';
-import { block, fitView, framePoint, loupeSpot, pixelAt, pixelUnder, readInterval, type Pixels } from './frames';
+import {
+  block,
+  fitView,
+  framePoint,
+  loupeSpot,
+  pixelAt,
+  pixelUnder,
+  readInterval,
+  screenRect,
+  type Pixels
+} from './frames';
 
 // a frame where every pixel says where it is: red is x, green is y
 function frame(width: number, height: number): Pixels {
@@ -116,5 +126,22 @@ describe('readInterval', () => {
     expect(readInterval(60)).toBe(100);
     expect(readInterval(0)).toBe(100);
     expect(readInterval(Number.NaN)).toBe(100);
+  });
+});
+
+describe('screenRect', () => {
+  const win = { screenX: 160, screenY: 40, outerHeight: 986, innerHeight: 900 };
+
+  it('puts a box of the page where the window shows it on the monitor', () => {
+    expect(screenRect({ x: 396, y: 330, w: 360, h: 320 }, win, 1)).toEqual({ x: 556, y: 456, w: 360, h: 320 });
+  });
+
+  it('scales to frame pixels of a high density screen', () => {
+    expect(screenRect({ x: 10, y: 20, w: 360, h: 320 }, win, 1.5)).toEqual({ x: 255, y: 219, w: 540, h: 480 });
+  });
+
+  it('counts no bars when the browser reports none', () => {
+    const bare = { screenX: 0, screenY: 0, outerHeight: 700, innerHeight: 720 };
+    expect(screenRect({ x: 5, y: 6, w: 7, h: 8 }, bare, 2)).toEqual({ x: 10, y: 12, w: 14, h: 16 });
   });
 });
