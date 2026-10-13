@@ -6,10 +6,26 @@
   import ToggleField from '../../ToggleField.svelte';
   import { preferences, setGroup } from '$lib/stores/preferences';
   import { FRAME_RATES, type FrameRate } from '$lib/editor/settings';
+  import { COLOR_CHANNELS, names, normalizeChannels } from '$lib/core/histogram';
+  import type { Channel } from '$lib/core/stats';
 
   const RATES = FRAME_RATES.map((fps) => ({ value: String(fps), label: `${fps} frames a second` }));
 
   const p = $derived($preferences);
+
+  const channels = $derived(normalizeChannels(p.histogram.channels));
+  // gray or all three colors, and the few colors the chips picked when that is what is set
+  const CHANNEL_SETS: Record<string, Channel[]> = { gray: ['gray'], rgb: [...COLOR_CHANNELS] };
+  const channelValue = $derived(channels.join(' '));
+  const channelOptions = $derived.by(() => {
+    const sets = Object.values(CHANNEL_SETS);
+    if (!sets.some((s) => s.join(' ') === channelValue)) sets.push(channels);
+    return sets.map((s) => ({ value: s.join(' '), label: capital(names(s)) }));
+  });
+
+  function capital(text: string): string {
+    return text.charAt(0).toUpperCase() + text.slice(1);
+  }
 
   // the system decides, the page only says what it decided
   let reduced = $state(false);
@@ -22,8 +38,10 @@
   });
 </script>
 
-<Section title="Share" help="Frames are only read in this tab. More of them make hovering smoother and cost more power.">
-  <Field label="Frame rate">
+<Section
+  title="Share"
+  help="Frames are only read in this tab. More of them make hovering smoother and cost more power. A new rate applies to the next share.">
+  <Field label="Frame rate" hint="Frames a second the share is asked for, a change applies to the next share">
     <SelectField
       value={String(p.share.fps)}
       options={RATES}
@@ -38,8 +56,15 @@
   </Field>
 </Section>
 
-<Section title="Histogram" help="The log chip next to a histogram changes it for the capture you are looking at.">
-  <Field label="Log scale" hint="A new capture starts on a log scale">
+<Section title="Histogram" help="The chips above the histogram change the same settings.">
+  <Field label="Channels" hint="Gray alone or the color channels">
+    <SelectField
+      value={channelValue}
+      options={channelOptions}
+      label="Channels the histogram shows"
+      onchange={(v) => setGroup('histogram', { channels: normalizeChannels(v.split(' ')) })} />
+  </Field>
+  <Field label="Log scale" hint="A few pixels still show next to a large flat area">
     <ToggleField value={p.histogram.log} label="Log scale" onchange={(v) => setGroup('histogram', { log: v })} />
   </Field>
 </Section>

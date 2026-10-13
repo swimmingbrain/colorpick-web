@@ -27,7 +27,7 @@ export interface Preferences {
     loupe: boolean;
   };
   histogram: {
-    // gray alone or some of the color channels, the chips above the histogram change it
+    // gray alone or some of the color channels, the chips above the histogram change both
     channels: Channel[];
     log: boolean;
   };
