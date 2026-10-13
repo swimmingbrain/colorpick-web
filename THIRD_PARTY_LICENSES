@@ -1,0 +1,24 @@
+brainPICK bundles the following libraries. Each keeps its own license, the texts are in
+node_modules/<package>/LICENSE after an install. Versions are the ones this repository
+installs from package.json, checked against the installed packages.
+
+tinykeys 4.0.1: the keyboard shortcuts
+MIT
+https://github.com/jamiebuilds/tinykeys
+
+The fonts of the interface are bundled with the app (latin subsets, woff2 and woff, imported
+from the Fontsource packages by the root layout), so the page asks no font service for them.
+Each is under the SIL Open Font License 1.1, the full text is in
+node_modules/@fontsource/<font>/LICENSE after an install:
+
+Inter, from @fontsource/inter 5.3.0
+OFL-1.1, Copyright 2016 The Inter Project Authors
+https://github.com/rsms/inter
+
+JetBrains Mono, from @fontsource/jetbrains-mono 5.3.0
+OFL-1.1, Copyright 2020 The JetBrains Mono Project Authors
+https://github.com/JetBrains/JetBrainsMono
+
+Instrument Serif, from @fontsource/instrument-serif 5.3.0
+OFL-1.1, Copyright 2022 The Instrument Serif Project Authors
+https://github.com/Instrument/instrument-serif
