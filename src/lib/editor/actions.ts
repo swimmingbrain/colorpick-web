@@ -16,6 +16,7 @@ import {
 } from '$lib/stores/session';
 import { hex, rgbCss, type RGB } from '$lib/core/color';
 import { onEnded, shareSupported, startShare, stopShare, trackSettings } from '$lib/core/share';
+import { historyCsv, historyJson } from '$lib/core/history';
 import { lockOf, lockText, type ToolId } from './tools';
 import { keyLabel } from './keys';
 import type { ToolbarSide } from './settings';
@@ -142,12 +143,25 @@ function historyEmpty(): boolean {
   return true;
 }
 
+// the file is made in the tab and handed to the browser's downloads, nothing goes anywhere else
+function download(name: string, text: string, type: string) {
+  const url = URL.createObjectURL(new Blob([text], { type }));
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = name;
+  document.body.append(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  addToast(`Saved ${name}`, 'success', 2000);
+}
+
 export function exportJson() {
-  historyEmpty();
+  if (!historyEmpty()) download('brainpick.json', historyJson(get(history)), 'application/json');
 }
 
 export function exportCsv() {
-  historyEmpty();
+  if (!historyEmpty()) download('brainpick.csv', historyCsv(get(history)), 'text/csv;charset=utf-8');
 }
 
 export function clearHistory() {

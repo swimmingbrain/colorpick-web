@@ -1,5 +1,7 @@
 import { derived, writable } from 'svelte/store';
+import { browser } from '$app/environment';
 import type { RGB } from '$lib/core/color';
+import { loadHistory, saveHistory, withEntry } from '$lib/core/history';
 
 // what the app knows about the share and what was read from it. frames stay in the capture module,
 // pixels never go into svelte state
@@ -121,8 +123,31 @@ export interface HistoryEntry {
   };
 }
 
-// newest first
-export const history = writable<HistoryEntry[]>([]);
+// the server and the tests have no local storage
+function storage(): Storage | null {
+  if (!browser) return null;
+  try {
+    return localStorage;
+  } catch {
+    return null;
+  }
+}
+
+// newest first and kept in this browser, what did not fit into the storage is not kept in memory either
+function createHistory() {
+  const store = writable<HistoryEntry[]>(loadHistory(storage()));
+  return {
+    subscribe: store.subscribe,
+    set(list: HistoryEntry[]) {
+      store.set(saveHistory(storage(), list));
+    },
+    update(fn: (list: HistoryEntry[]) => HistoryEntry[]) {
+      store.update((list) => saveHistory(storage(), fn(list)));
+    }
+  };
+}
+
+export const history = createHistory();
 // the id of the entry picked in the history panel
 export const selection = writable<string | null>(null);
 
@@ -141,6 +166,10 @@ export const pointer = writable<PointerInfo | null>(null);
 
 export function selectEntry(id: string | null) {
   selection.set(id);
+}
+
+export function addEntry(entry: HistoryEntry) {
+  history.update((list) => withEntry(list, entry));
 }
 
 export function removeEntry(id: string) {
