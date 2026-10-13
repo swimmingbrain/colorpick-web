@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
   CSV_COLUMNS,
+  THUMB_MAX,
+  areaEntry,
   HISTORY_KEY,
   HISTORY_LIMIT,
   entryId,
@@ -10,6 +12,7 @@ import {
   parseEntry,
   parseHistory,
   saveHistory,
+  thumbSize,
   withEntry
 } from './history';
 import type { AreaStats, HistoryEntry } from '$lib/stores/session';
@@ -180,5 +183,54 @@ describe('history exports', () => {
 
   it('writes only the header for an empty history', () => {
     expect(historyCsv([])).toBe(CSV_COLUMNS.join(',') + '\n');
+  });
+});
+
+describe('areaEntry', () => {
+  const capture = {
+    rect: { x: 0.25, y: 0.5, w: 0.125, h: 0.25 },
+    frame: { w: 1920, h: 1080 },
+    thumbnail: 'data:image/jpeg;base64,AA',
+    stats: stats()
+  };
+  const when = new Date('2026-10-13T21:30:00.000Z');
+
+  it('takes the mean as the color and keeps the rectangle, the frame and the statistics', () => {
+    const e = areaEntry(capture, null, when);
+    expect(e.kind).toBe('area');
+    expect(e.time).toBe('2026-10-13T21:30:00.000Z');
+    expect(e.rgb).toEqual({ r: 47, g: 58, b: 79 });
+    expect(e.source).toBe('screen');
+    expect(e.corrected).toBe(false);
+    expect(e.residual).toBeNull();
+    expect(e.area).toEqual(capture);
+    expect(e.area!.rect).not.toBe(capture.rect);
+    expect(parseEntry(JSON.parse(JSON.stringify(e)))).toEqual(e);
+  });
+
+  it('says the pixels were corrected and keeps the hold out error of the calibration', () => {
+    const e = areaEntry(capture, { holdout: { max: 2 } }, when);
+    expect(e.source).toBe('screen corrected');
+    expect(e.corrected).toBe(true);
+    expect(e.residual).toBe(2);
+    expect(historyCsv([e]).split('\n')[1]).toContain(',screen corrected,true,2,240,200,#2F3A4F');
+  });
+
+  it('gives every entry an id of its own', () => {
+    expect(areaEntry(capture, null, when).id).not.toBe(areaEntry(capture, null, when).id);
+  });
+});
+
+describe('thumbSize', () => {
+  it('fits the longer side into the limit and keeps the shape', () => {
+    expect(thumbSize(1920, 1080)).toEqual({ w: THUMB_MAX, h: 90 });
+    expect(thumbSize(200, 400)).toEqual({ w: 80, h: 160 });
+    expect(thumbSize(160, 160)).toEqual({ w: 160, h: 160 });
+  });
+
+  it('keeps a small area at its size and never gives zero', () => {
+    expect(thumbSize(3, 3)).toEqual({ w: 3, h: 3 });
+    expect(thumbSize(5000, 3)).toEqual({ w: 160, h: 1 });
+    expect(thumbSize(0, 10)).toEqual({ w: 1, h: 1 });
   });
 });
