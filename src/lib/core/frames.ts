@@ -143,3 +143,23 @@ export function loupeSpot(pointer: Point, box: { w: number; h: number }, bounds:
   y = Math.max(pad, Math.min(y, bounds.h - box.h - pad));
   return { x: Math.round(x), y: Math.round(y) };
 }
+
+// where the window sits on its screen, in css pixels, as the browser reports it
+export interface WindowPlace {
+  screenX: number;
+  screenY: number;
+  outerHeight: number;
+  innerHeight: number;
+}
+
+// a box of the page in frame pixels of a monitor share: the window position plus the bars above the page, times
+// frame pixels per css pixel. a guess the card search tries first, a second monitor or a docked panel throws it off
+export function screenRect(box: Rect, win: WindowPlace, scale: number): Rect {
+  const bars = Math.max(0, win.outerHeight - win.innerHeight);
+  return {
+    x: (win.screenX + box.x) * scale,
+    y: (win.screenY + bars + box.y) * scale,
+    w: box.w * scale,
+    h: box.h * scale
+  };
+}

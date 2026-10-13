@@ -17,6 +17,7 @@
   } from '$lib/core/frames';
   import { currentStream } from '$lib/core/share';
   import { hex } from '$lib/core/color';
+  import { CARD, cardLayout } from '$lib/core/calibrate';
   import {
     HANDLES,
     cursorFor,
@@ -34,7 +35,7 @@
   } from '$lib/core/area';
   import { activeTool, zoom } from '$lib/stores/app';
   import { preferences } from '$lib/stores/preferences';
-  import { area, current, frame, livePreview, pointer, share } from '$lib/stores/session';
+  import { area, calibrating, current, frame, livePreview, pointer, share } from '$lib/stores/session';
 
   const keys = $derived($preferences.shortcuts);
   const pickKey = $derived(keyName('tool.pick', keys));
@@ -48,6 +49,17 @@
 
   const size = $derived($share && $share.width > 0 && $share.height > 0 ? $share : null);
   const view = $derived(size ? fitView(size, { width: stageW, height: stageH }, $zoom, dpr) : null);
+
+  const CARD_LAYOUT = cardLayout();
+  // the middle of the stage, rounded so the card corner lands on a whole css pixel of the page
+  const cardAt = $derived.by(() => {
+    if (!stageEl || !$calibrating || stageW <= 0 || stageH <= 0) return { x: 0, y: 0 };
+    const r = stageEl.getBoundingClientRect();
+    return {
+      x: Math.round(r.left + (r.width - CARD.width) / 2) - r.left,
+      y: Math.round(r.top + (r.height - CARD.height) / 2) - r.top
+    };
+  });
 
   // a handle is drawn this big and can be taken a little outside it, in css pixels
   const HANDLE = 7;
@@ -174,7 +186,7 @@
   }
 
   function onpointermove(e: PointerEvent) {
-    if (!view || !size) return;
+    if (!view || !size || $calibrating) return;
     const p = local(e);
     hover = framePoint(view, p.x, p.y);
     cross = pixelUnder(hover, size);
@@ -276,6 +288,14 @@
     pointer.set(null);
     current.update((c) => (c?.live ? { ...c, live: false } : c));
   }
+
+  // the card covers the preview while it is shown, nothing is read or drawn under the pointer
+  $effect(() => {
+    if (!$calibrating) return;
+    if (drag) endDrag(null, false);
+    stopReading();
+    pointer.set(null);
+  });
 
   // a share that ends takes the drag along, the next one starts clean
   $effect(() => {
@@ -445,8 +465,21 @@
         </div>
       </div>
     </div>
-    {#if $preferences.stage.loupe && at && lens && $current}
+    {#if $preferences.stage.loupe && at && lens && $current && !$calibrating}
       <Loupe pixels={lens} hex={hex($current.rgb)} {at} bounds={{ w: stageW, h: stageH }} />
+    {/if}
+    {#if $calibrating}
+      <!-- plain boxes at whole css pixels, no transform, opacity or anything on top, so the share sees them as drawn -->
+      <div class="calibration" style="background: {CARD.background}" role="img" aria-label="The calibration card, escape cancels">
+        <div
+          class="card"
+          data-calibration-card
+          style="left: {cardAt.x}px; top: {cardAt.y}px; width: {CARD_LAYOUT.width}px; height: {CARD_LAYOUT.height}px; background: {CARD_LAYOUT.light}">
+          {#each [CARD_LAYOUT.inner, ...CARD_LAYOUT.dark, ...CARD_LAYOUT.patches] as b, i (i)}
+            <div style="left: {b.x}px; top: {b.y}px; width: {b.w}px; height: {b.h}px; background: {b.color}"></div>
+          {/each}
+        </div>
+      </div>
     {/if}
   {:else}
     <div class="empty">
@@ -523,6 +556,18 @@
     height: 100%;
     touch-action: none;
     will-change: transform;
+  }
+
+  .calibration {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    overflow: hidden;
+  }
+
+  .card,
+  .card div {
+    position: absolute;
   }
 
   .empty {
