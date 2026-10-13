@@ -7,7 +7,7 @@
     { title: 'The eyedropper too', text: 'Pick works without sharing anything, through the eyedropper the browser has built in.' },
     { title: 'Areas, measured', text: 'Draw a rectangle and read its mean, median, spread, darkest and brightest value and its most common color.' },
     { title: 'Histograms', text: 'Red, green, blue and gray in 256 bins, on a log scale if you like, with the mean and the median marked.' },
-    { title: 'Calibrated colors', text: 'A screen share can shift colors a little. One calibration measures by how much and corrects every value after it.' },
+    { title: 'Calibrated colors', text: 'A screen share shifts colors by a few steps. One calibration measures by how much, then every value read from the share is corrected.' },
     { title: 'A history to keep', text: 'Every pick and every area stays in this browser, ready to copy or to export as JSON or CSV.' },
     { title: 'Stays on your machine', text: 'No account and no upload. The app works offline once it has loaded.' },
     { title: 'Keys for everything', text: 'Every tool has a key, the command palette finds the rest and the histogram works without a mouse.' },
@@ -107,7 +107,7 @@
             </div>
             <span class="demo-filename">entire screen</span>
             <div style="flex:1"></div>
-            <span class="demo-label">calibrated &plusmn;0.8</span>
+            <span class="demo-label">calibrated &plusmn;2</span>
           </div>
           <div class="demo-content">
             <div class="demo-stage">
