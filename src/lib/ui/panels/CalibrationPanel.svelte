@@ -1,10 +1,10 @@
 <script lang="ts">
   import Panel from '../Panel.svelte';
   import Field from '../Field.svelte';
-  import { calibrate, keyName, tip } from '$lib/editor/actions';
-  import { calibrationStatus, lockOf, lockText, within, type CalibrationStatus } from '$lib/editor/tools';
+  import { calibrate, keyName, removeCalibration, tip } from '$lib/editor/actions';
+  import { calibrationStatus, lockOf, lockText, plusMinus, within, type CalibrationStatus } from '$lib/editor/tools';
   import { preferences } from '$lib/stores/preferences';
-  import { area, calibration, share, type ErrorSummary } from '$lib/stores/session';
+  import { area, calibrating, calibration, share, type ErrorSummary } from '$lib/stores/session';
 
   const keys = $derived($preferences.shortcuts);
   const status = $derived(calibrationStatus($calibration, $share));
@@ -16,7 +16,11 @@
     'other size': 'stored for another frame size, calibrate again'
   };
 
-  const line = $derived(status === 'ready' && $calibration ? `calibrated, colors within ${within($calibration)}` : LINES[status]);
+  const line = $derived.by(() => {
+    if ($calibrating) return 'calibrating, escape cancels';
+    if (status === 'ready' && $calibration) return `calibrated, colors within ${within($calibration)}`;
+    return LINES[status];
+  });
 
   function when(iso: string): string {
     const d = new Date(iso);
@@ -25,16 +29,12 @@
   }
 
   function errors(e: ErrorSummary): string {
-    return `±${e.max.toFixed(1)} max, ${e.mean.toFixed(1)} mean`;
-  }
-
-  function remove() {
-    calibration.set(null);
+    return `${plusMinus(e.max)} max, ${e.mean.toFixed(2)} mean`;
   }
 </script>
 
 <Panel>
-  <div class="state" class:ready={status === 'ready'} class:stale={status === 'other size'}>
+  <div class="state" class:ready={status === 'ready'} class:stale={status === 'other size'} class:busy={$calibrating}>
     <span class="dot"></span>
     <span>{line}</span>
   </div>
@@ -51,15 +51,20 @@
     <Field label="Hold out" hint="How far off the patches are that the fit never saw">
       <span class="value">{errors($calibration.holdout)}</span>
     </Field>
+    {#if $calibration.clipped.length > 0}
+      <p class="clipped" title="Card colors this screen cannot show, the fit leaves them out">
+        clipped {$calibration.clipped.join(' ')}
+      </p>
+    {/if}
   {/if}
   <div class="actions">
     <button
       class="small-btn primary"
-      class:locked={lock !== null}
-      aria-disabled={lock !== null}
+      class:locked={lock !== null || $calibrating}
+      aria-disabled={lock !== null || $calibrating}
       title={lock ? lockText(lock, (id) => keyName(id, keys)) : tip('Calibrate', 'tool.calibrate', keys)}
-      onclick={calibrate}>{$calibration ? 'Calibrate again' : 'Calibrate'}</button>
-    <button class="small-btn" disabled={$calibration === null} onclick={remove}>Remove</button>
+      onclick={calibrate}>{$calibrating ? 'Calibrating...' : $calibration ? 'Calibrate again' : 'Calibrate'}</button>
+    <button class="small-btn" disabled={$calibration === null || $calibrating} onclick={removeCalibration}>Remove</button>
   </div>
   <p class="help">
     The card is shown on the stage for a moment and read back through the share, the difference becomes the
@@ -100,10 +105,25 @@
     background: var(--warning);
   }
 
+  .state.busy .dot {
+    border-color: var(--accent);
+    background: var(--accent);
+  }
+
   .value {
     font-family: var(--font-editor);
     font-size: 11.5px;
     color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .clipped {
+    padding: 4px 8px 0;
+    font-family: var(--font-editor);
+    font-size: 10.5px;
+    color: var(--text-muted);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;

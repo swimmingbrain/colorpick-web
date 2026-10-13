@@ -73,7 +73,12 @@ export function calibrationStatus(cal: Calibration | null, frame: { width: numbe
   return 'ready';
 }
 
+// ±2 or ±1.2, one decimal at most and none for a whole number
+export function plusMinus(v: number): string {
+  return `±${Math.round(v * 10) / 10}`;
+}
+
 // how far off the colors are after the correction, from the patches the fit never saw
-export function within(cal: Calibration): string {
-  return `±${(Math.round(cal.holdout.max * 10) / 10).toFixed(1)}`;
+export function within(cal: Pick<Calibration, 'holdout'>): string {
+  return plusMinus(cal.holdout.max);
 }

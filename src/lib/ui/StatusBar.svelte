@@ -4,13 +4,23 @@
   import { rgbText } from '$lib/core/color';
   import { activeTool } from '$lib/stores/app';
   import { preferences } from '$lib/stores/preferences';
-  import { area, calibration, pointer, share } from '$lib/stores/session';
+  import { area, calibrating, calibration, pointer, share } from '$lib/stores/session';
 
   const gate = $derived({ sharing: $share !== null, hasArea: $area !== null });
-  const hint = $derived(toolHint($activeTool, gate, (id) => keyName(id, $preferences.shortcuts)));
+  const hint = $derived(
+    $calibrating
+      ? 'the card on the stage is read back through the share, escape cancels'
+      : toolHint($activeTool, gate, (id) => keyName(id, $preferences.shortcuts))
+  );
   const status = $derived(calibrationStatus($calibration, $share));
   const calibrated = $derived(
-    status === 'none' ? 'not calibrated' : status === 'other size' ? 'calibrate again' : `calibrated ${within($calibration!)}`
+    $calibrating
+      ? 'calibrating'
+      : status === 'none'
+        ? 'not calibrated'
+        : status === 'other size'
+          ? 'calibrate again'
+          : `calibrated ${within($calibration!)}`
   );
 </script>
 

@@ -86,9 +86,9 @@ describe('calibrationStatus', () => {
     expect(calibrationStatus(cal(1920, 1080), null)).toBe('ready');
   });
 
-  it('gives the error the fit never saw, with one decimal', () => {
+  it('gives the error the fit never saw, with one decimal at most', () => {
     expect(within(cal(1, 1, 1.23))).toBe('±1.2');
-    expect(within(cal(1, 1, 0.96))).toBe('±1.0');
-    expect(within(cal(1, 1, 3))).toBe('±3.0');
+    expect(within(cal(1, 1, 0.96))).toBe('±1');
+    expect(within(cal(1, 1, 3))).toBe('±3');
   });
 });
