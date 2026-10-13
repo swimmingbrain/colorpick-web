@@ -1,11 +1,12 @@
 import { get } from 'svelte/store';
-import { activeTool, addToast, dialog, zoom } from '$lib/stores/app';
+import { activeTool, addToast, dialog, toasts, zoom } from '$lib/stores/app';
 import { preferences, resetParts, setGroup } from '$lib/stores/preferences';
 import {
   activeCalibration,
   addEntry,
   area,
   calibration,
+  calibrating,
   capture,
   clearEntries,
   current,
@@ -21,13 +22,20 @@ import {
   type Source
 } from '$lib/stores/session';
 import { hex, parseHex, rgbCss, type RGB } from '$lib/core/color';
-import { onEnded, shareSupported, startShare, stopShare, trackSettings } from '$lib/core/share';
+import { currentShare, onEnded, shareSupported, startShare, stopShare, trackSettings } from '$lib/core/share';
 import { areaEntry, entryId, historyCsv, historyJson, thumbSize } from '$lib/core/history';
 import { toPixels } from '$lib/core/area';
-import { grabRegion } from '$lib/core/frames';
-import { applyCalibration } from '$lib/core/calibrate';
+import { grabFrame, grabRegion, screenRect } from '$lib/core/frames';
+import {
+  applyCalibration,
+  cardDifference,
+  fitCalibration,
+  locateCard,
+  type Calibration
+} from '$lib/core/calibrate';
+import type { Rect } from '$lib/core/types';
 import { analyze, toPlain } from '$lib/core/stats';
-import { calibrationStatus, lockOf, lockText, type ToolId } from './tools';
+import { calibrationStatus, lockOf, lockText, within, type ToolId } from './tools';
 import { keyLabel } from './keys';
 import type { ToolbarSide } from './settings';
 
@@ -79,6 +87,7 @@ function copyText(text: string) {
 
 // the session forgets the share and what was under the pointer, the history and the area stay
 function endSession() {
+  stopCalibration();
   share.set(null);
   frame.set(null);
   pointer.set(null);
@@ -232,8 +241,86 @@ export function toggleLive() {
   if (unlocked('live')) livePreview.update((on) => !on);
 }
 
-export function calibrate() {
-  unlocked('calibrate');
+const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
+// a calibration that started later or was canceled moves this on, the older run then stops at its next step
+let run = 0;
+const TRIES = 10;
+
+// where the card should be in the frame, from the window position on the screen
+function cardHint(scale: number): Rect | undefined {
+  const el = document.querySelector('[data-calibration-card]');
+  if (!el) return undefined;
+  const b = el.getBoundingClientRect();
+  return screenRect({ x: b.left, y: b.top, w: b.width, h: b.height }, window, scale);
+}
+
+// the card goes on the stage, two fresh frames a moment apart must show it alike, then the fit becomes the
+// calibration. a few tries, the screen may still be settling after the card appeared
+async function measure(token: number): Promise<Calibration | null> {
+  const going = () => token === run && currentShare() !== null;
+  await sleep(100);
+  for (let i = 0; i < TRIES && going(); i++) {
+    const a = await grabFrame({ fresh: true, timeoutMs: 600 });
+    if (!going()) break;
+    // frame pixels per css pixel, the device pixel ratio when the share comes at the native size
+    const scale = a ? a.width / (screen.width || a.width / (devicePixelRatio || 1)) : 0;
+    const rect = a ? locateCard(a, scale, cardHint(scale)) : null;
+    if (!a || !rect) {
+      await sleep(200);
+      continue;
+    }
+    await sleep(250);
+    const b = await grabFrame({ fresh: true, timeoutMs: 600 });
+    if (!going()) break;
+    if (!b || b.width !== a.width || b.height !== a.height || cardDifference(a, b, rect) > 1) continue;
+    try {
+      return fitCalibration(b, rect);
+    } catch {
+      // something covers the card or dims it, the next try may see it clear
+      await sleep(200);
+    }
+  }
+  return null;
+}
+
+export async function calibrate() {
+  if (!unlocked('calibrate') || get(calibrating)) return;
+  const token = ++run;
+  dialog.set(null);
+  // a toast over the card would hide some of its patches
+  toasts.set([]);
+  calibrating.set(true);
+  let result: Calibration | null = null;
+  try {
+    result = await measure(token);
+  } finally {
+    if (token === run) calibrating.set(false);
+  }
+  if (token !== run || !currentShare()) return;
+  if (!result) {
+    addToast('The card was not found, share the screen this window is on and keep it visible', 'error', 6000);
+    return;
+  }
+  calibration.set(result);
+  addToast(`Calibrated, colors are within ${within(result)} now`, 'success', 4000);
+}
+
+// the card goes away and a run still going gives up, false when nothing was running
+function stopCalibration(): boolean {
+  if (!get(calibrating)) return false;
+  run++;
+  calibrating.set(false);
+  return true;
+}
+
+export function cancelCalibration() {
+  if (stopCalibration()) addToast('Calibration canceled');
+}
+
+export function removeCalibration() {
+  if (!get(calibration)) return;
+  calibration.set(null);
+  addToast('Calibration removed');
 }
 
 function historyEmpty(): boolean {
@@ -294,8 +381,12 @@ export function deleteEntry() {
   else removeEntry(id);
 }
 
-// escape lets go of one thing at a time: a dialog, then the picked history entry
+// escape lets go of one thing at a time: a running calibration, a dialog, then the picked history entry
 export function escape() {
+  if (stopCalibration()) {
+    addToast('Calibration canceled');
+    return;
+  }
   if (get(dialog)) {
     dialog.set(null);
     return;
