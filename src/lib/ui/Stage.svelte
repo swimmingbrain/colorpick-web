@@ -18,9 +18,23 @@
   } from '$lib/core/frames';
   import { currentStream } from '$lib/core/share';
   import { hex } from '$lib/core/color';
+  import {
+    HANDLES,
+    cursorFor,
+    handlePoints,
+    hitRect,
+    moveRect,
+    resizeRect,
+    spanRect,
+    toNorm,
+    toPixels,
+    type Handle,
+    type Hit,
+    type PxRect
+  } from '$lib/core/area';
   import { activeTool, zoom } from '$lib/stores/app';
   import { preferences } from '$lib/stores/preferences';
-  import { current, frame, livePreview, pointer, share } from '$lib/stores/session';
+  import { area, current, frame, livePreview, pointer, share } from '$lib/stores/session';
 
   const keys = $derived($preferences.shortcuts);
   const pickKey = $derived(keyName('tool.pick', keys));
@@ -35,8 +49,41 @@
   const size = $derived($share && $share.width > 0 && $share.height > 0 ? $share : null);
   const view = $derived(size ? fitView(size, { width: stageW, height: stageH }, $zoom, dpr) : null);
 
+  // a handle is drawn this big and can be taken a little outside it, in css pixels
+  const HANDLE = 7;
+  const REACH = 6;
+  // a press that moves less than this is a click, it draws no area
+  const DRAG_START = 3;
+
+  type Drag =
+    | { kind: 'draw'; start: Point; from: Point; moved: boolean }
+    | { kind: 'move'; start: Point; rect: PxRect }
+    | { kind: 'resize'; handle: Handle; rect: PxRect };
+
+  let drag: Drag | null = $state.raw(null);
+  // the rectangle while it is dragged, the store takes it on release
+  let draft: PxRect | null = $state(null);
+  // what the pointer would take hold of in area mode, for the cursor
+  let hit: Hit = $state(null);
+  let dragging = $state(false);
+
+  const editing = $derived($activeTool === 'area');
+  const rect = $derived(size && $area ? toPixels($area, size) : null);
+  const shownRect = $derived(draft ?? rect);
+  const cursor = $derived.by(() => {
+    if (!editing) return 'none';
+    if (drag?.kind === 'resize') return cursorFor(drag.handle);
+    if (drag?.kind === 'move') return 'move';
+    return dragging ? 'crosshair' : cursorFor(hit);
+  });
+
   // canvases cannot read css variables, the tokens are read once
-  let colors = { area: '#d19a66', fill: 'rgba(209, 154, 102, 0.08)', crosshair: 'rgba(255, 255, 255, 0.55)' };
+  let colors = {
+    area: '#d19a66',
+    fill: 'rgba(209, 154, 102, 0.08)',
+    crosshair: 'rgba(255, 255, 255, 0.55)',
+    deep: '#111113'
+  };
 
   onMount(() => {
     dpr = window.devicePixelRatio || 1;
@@ -45,7 +92,8 @@
     colors = {
       area: token('--area', colors.area),
       fill: token('--area-fill', colors.fill),
-      crosshair: token('--crosshair', colors.crosshair)
+      crosshair: token('--crosshair', colors.crosshair),
+      deep: token('--bg-deep', colors.deep)
     };
     return () => {
       stopReading();
@@ -137,15 +185,69 @@
     at = { x: e.clientX - s.left, y: e.clientY - s.top };
     requestRead();
     schedule();
+    if (drag) follow(drag, hover, p);
+    else hit = editing && rect ? hitRect(rect, hover, REACH / view.scale) : null;
   }
 
-  // the color panel keeps the last value, it is just not live anymore
+  function follow(d: Drag, p: Point, css: Point) {
+    if (!size) return;
+    if (d.kind === 'draw') {
+      if (!d.moved && Math.hypot(css.x - d.from.x, css.y - d.from.y) < DRAG_START) return;
+      d.moved = true;
+      dragging = true;
+      draft = spanRect(d.start, p, size);
+    } else if (d.kind === 'move') {
+      draft = moveRect(d.rect, p.x - d.start.x, p.y - d.start.y, size);
+    } else {
+      draft = resizeRect(d.rect, d.handle, p, size);
+    }
+  }
+
+  // pointer events and not mouse events, so a pen or a finger can draw the area too
+  function onpointerdown(e: PointerEvent) {
+    if (!editing || e.button !== 0 || !view || !size) return;
+    const css = local(e);
+    const p = framePoint(view, css.x, css.y);
+    const h = rect ? hitRect(rect, p, REACH / view.scale) : null;
+    if (rect && h) drag = h === 'inside' ? { kind: 'move', start: p, rect } : { kind: 'resize', handle: h, rect };
+    else drag = { kind: 'draw', start: p, from: css, moved: false };
+    overlay?.setPointerCapture(e.pointerId);
+  }
+
+  function endDrag(e: PointerEvent | null, keep: boolean) {
+    if (keep && draft && size) area.set(toNorm(draft, size));
+    drag = null;
+    draft = null;
+    dragging = false;
+    if (e && overlay?.hasPointerCapture(e.pointerId)) overlay.releasePointerCapture(e.pointerId);
+  }
+
+  function onpointerup(e: PointerEvent) {
+    if (drag) endDrag(e, true);
+  }
+
+  function onpointercancel(e: PointerEvent) {
+    if (drag) endDrag(e, false);
+  }
+
+  // escape lets go of a drag before it closes anything else, the area stays as it was
+  function onwindowkey(e: KeyboardEvent) {
+    if (e.key !== 'Escape' || !drag) return;
+    e.preventDefault();
+    e.stopPropagation();
+    endDrag(null, false);
+  }
+
+  $effect(() => {
+    if (!editing && drag) endDrag(null, false);
+  });
+
   // a fresh frame for the pixel that is kept, the one read for hovering may be a moment old
-  async function keepPixel(at: Point) {
+  async function keepPixel(p: Point) {
     const img = (await grabFrame()) ?? latest;
     if (!img) return;
     latest = img;
-    const px = pixelUnder(at, img);
+    const px = pixelUnder(p, img);
     const rgb = px ? pixelAt(img, px.x, px.y) : null;
     if (rgb) keepColor(rgb, 'screen');
   }
@@ -163,7 +265,9 @@
     }
   }
 
+  // the color panel keeps the last value, it is just not live anymore
   function onpointerleave() {
+    if (drag) return;
     stopReading();
     pointer.set(null);
     current.update((c) => (c?.live ? { ...c, live: false } : c));
@@ -222,6 +326,62 @@
     lines();
   }
 
+  // the size label sits above the rectangle, inside it when there is no room above
+  function drawLabel(ctx: CanvasRenderingContext2D, r: PxRect, x0: number, y0: number, width: number) {
+    const text = `${r.w} x ${r.h}`;
+    ctx.font = `500 ${Math.round(10.5 * dpr)}px 'JetBrains Mono', monospace`;
+    const padX = Math.round(5 * dpr);
+    const h = Math.round(16 * dpr);
+    const w = Math.ceil(ctx.measureText(text).width) + padX * 2;
+    const gap = Math.round(4 * dpr);
+    let y = y0 - gap - h;
+    if (y < 0) y = y0 + gap;
+    const x = Math.max(0, Math.min(x0, width - w));
+    ctx.fillStyle = colors.area;
+    ctx.fillRect(x, y, w, h);
+    ctx.fillStyle = '#111';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(text, x + padX, y + h / 2 + 0.5);
+  }
+
+  // the rectangle with its handles while it can be edited, a quiet outline while picking
+  function drawArea(ctx: CanvasRenderingContext2D, r: PxRect, scale: number, width: number) {
+    const k = scale * dpr;
+    const x0 = Math.round(r.x * k);
+    const y0 = Math.round(r.y * k);
+    const x1 = Math.round((r.x + r.w) * k);
+    const y1 = Math.round((r.y + r.h) * k);
+    const line = Math.max(1, Math.round(dpr));
+    const half = line / 2;
+    ctx.save();
+    if (editing) {
+      ctx.fillStyle = colors.fill;
+      ctx.fillRect(x0, y0, x1 - x0, y1 - y0);
+    } else {
+      ctx.globalAlpha = 0.5;
+    }
+    // a dark rim outside the accent line, so the edge shows on a light screen too
+    ctx.lineWidth = line;
+    ctx.strokeStyle = 'rgba(0, 0, 0, 0.5)';
+    ctx.strokeRect(x0 - line - half, y0 - line - half, x1 - x0 + line * 3, y1 - y0 + line * 3);
+    ctx.strokeStyle = colors.area;
+    ctx.strokeRect(x0 - half, y0 - half, x1 - x0 + line, y1 - y0 + line);
+    ctx.restore();
+    if (!editing) return;
+    const side = Math.round(HANDLE * dpr);
+    const points = handlePoints(r);
+    for (const h of HANDLES) {
+      const hx = Math.round(points[h].x * k - side / 2);
+      const hy = Math.round(points[h].y * k - side / 2);
+      ctx.fillStyle = colors.deep;
+      ctx.fillRect(hx, hy, side, side);
+      ctx.lineWidth = line;
+      ctx.strokeStyle = colors.area;
+      ctx.strokeRect(hx + half, hy + half, side - line, side - line);
+    }
+    drawLabel(ctx, r, x0, y0, width);
+  }
+
   // the overlay draws in device pixels so its lines stay sharp
   $effect(() => {
     if (!overlay || !view) return;
@@ -232,11 +392,12 @@
     const ctx = overlay.getContext('2d');
     if (!ctx) return;
     ctx.clearRect(0, 0, w, h);
-    if (cross && $activeTool === 'pick') drawCross(ctx, cross, view.scale);
+    if (shownRect) drawArea(ctx, shownRect, view.scale, w);
+    if (cross && !editing) drawCross(ctx, cross, view.scale);
   });
 </script>
 
-<svelte:window onresize={() => (dpr = window.devicePixelRatio || 1)} />
+<svelte:window onresize={() => (dpr = window.devicePixelRatio || 1)} onkeydowncapture={onwindowkey} />
 
 <section class="stage" aria-label="Stage" bind:this={stageEl} bind:clientWidth={stageW} bind:clientHeight={stageH}>
   {#if $share}
@@ -260,13 +421,18 @@
           {/if}
           <canvas
             class="overlay"
-            class:picking={$activeTool === 'pick'}
+            style:cursor
             bind:this={overlay}
             tabindex="0"
-            aria-label="Shared screen, click to keep the pixel under the pointer"
+            aria-label={editing
+              ? 'Shared screen, drag to draw the area, drag a handle to resize it'
+              : 'Shared screen, click to keep the pixel under the pointer'}
             {onclick}
             {onkeydown}
+            {onpointerdown}
             {onpointermove}
+            {onpointerup}
+            {onpointercancel}
             {onpointerleave}></canvas>
         </div>
       </div>
@@ -349,11 +515,6 @@
     height: 100%;
     touch-action: none;
     will-change: transform;
-  }
-
-  /* the drawn cross is the pointer while picking */
-  .overlay.picking {
-    cursor: none;
   }
 
   .empty {
