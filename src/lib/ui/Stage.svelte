@@ -281,10 +281,15 @@
     current.update((c) => (c?.live ? { ...c, live: false } : c));
   }
 
+  // a share that ends takes the drag along, the next one starts clean
   $effect(() => {
     if (!$share) {
       stopReading();
       latest = null;
+      drag = null;
+      draft = null;
+      dragging = false;
+      hit = null;
     }
   });
 
