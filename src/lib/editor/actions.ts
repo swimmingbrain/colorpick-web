@@ -164,8 +164,9 @@ export function drawArea() {
   if (unlocked('area')) activeTool.set('area');
 }
 
+// reading the area needs the statistics, until they are there capture says so
 export function captureArea() {
-  unlocked('capture');
+  if (unlocked('capture')) addToast('Capture comes with the statistics');
 }
 
 export function toggleLive() {
