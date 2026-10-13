@@ -1,0 +1,17 @@
+{
+  "name": "brainPICK",
+  "short_name": "brainPICK",
+  "author": "Braian Plaku",
+  "description": "A screen color picker in your browser. Pick pixels, measure areas, calibrate the share.",
+  "start_url": "/editor",
+  "display": "standalone",
+  "background_color": "#111113",
+  "theme_color": "#111113",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}
