@@ -23,8 +23,13 @@
       <button class="hex" title={tip('Copy the hex', 'edit.copy-hex', keys)} onclick={copyHex}>{hex($shown.rgb)}</button>
       <span class="badge" class:corrected={$shown.source === 'screen corrected'}>{$shown.source}</span>
     </div>
-    {#if $shown.raw}
-      <p class="raw" title="What the share delivered before the calibration">raw {hex($shown.raw)}, {rgbText($shown.raw)}</p>
+    {#if $shown.alt}
+      <p
+        class="raw"
+        title={$shown.alt.label === 'raw' ? 'What the share delivered before the calibration' : 'The value with the calibration applied'}>
+        {$shown.alt.label}
+        {hex($shown.alt.rgb)}, {rgbText($shown.alt.rgb)}
+      </p>
     {/if}
     <h3 class="section">Values</h3>
     <Field label="RGB" hint="Red, green and blue from 0 to 255">

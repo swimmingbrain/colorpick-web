@@ -16,8 +16,8 @@
     type Point
   } from '$lib/core/frames';
   import { currentStream } from '$lib/core/share';
-  import { hex } from '$lib/core/color';
-  import { CARD, cardLayout } from '$lib/core/calibrate';
+  import { hex, type RGB } from '$lib/core/color';
+  import { CARD, cardLayout, correctPixel } from '$lib/core/calibrate';
   import {
     HANDLES,
     cursorFor,
@@ -33,9 +33,19 @@
     type Hit,
     type PxRect
   } from '$lib/core/area';
-  import { activeTool, zoom } from '$lib/stores/app';
+  import { activeTool, valueMode, zoom } from '$lib/stores/app';
   import { preferences } from '$lib/stores/preferences';
-  import { area, calibrating, current, frame, livePreview, pointer, share } from '$lib/stores/session';
+  import {
+    activeCalibration,
+    area,
+    calibrating,
+    current,
+    frame,
+    livePreview,
+    pointer,
+    share,
+    type CurrentColor
+  } from '$lib/stores/session';
 
   const keys = $derived($preferences.shortcuts);
   const pickKey = $derived(keyName('tool.pick', keys));
@@ -169,9 +179,17 @@
     lens = block(latest, px.x, px.y);
     const was = $pointer;
     const same = was && was.x === px.x && was.y === px.y && was.rgb.r === rgb.r && was.rgb.g === rgb.g && was.rgb.b === rgb.b;
-    if (same && $current?.live) return;
+    const cal = $activeCalibration;
+    if (same && $current?.live && ($current.raw !== null) === (cal !== null)) return;
+    // the status bar keeps the raw value, the color panel gets the corrected one when a calibration holds
     pointer.set({ x: px.x, y: px.y, rgb });
-    current.set({ rgb, raw: null, source: 'screen', live: true });
+    current.set(colorOf(rgb, true));
+  }
+
+  function colorOf(rgb: RGB, live: boolean): CurrentColor {
+    const cal = $activeCalibration;
+    if (!cal) return { rgb, raw: null, source: 'screen', live };
+    return { rgb: correctPixel(cal, rgb.r, rgb.g, rgb.b), raw: rgb, source: 'screen corrected', live };
   }
 
   function stopReading() {
@@ -258,7 +276,10 @@
     latest = img;
     const px = pixelUnder(p, img);
     const rgb = px ? pixelAt(img, px.x, px.y) : null;
-    if (rgb) keepColor(rgb, 'screen');
+    if (!rgb) return;
+    const cal = $activeCalibration;
+    const c = colorOf(rgb, false);
+    keepColor(c.rgb, c.source, cal !== null, cal ? cal.holdout.max : null, c.raw);
   }
 
   function onclick(e: MouseEvent) {
@@ -466,7 +487,11 @@
       </div>
     </div>
     {#if $preferences.stage.loupe && at && lens && $current && !$calibrating}
-      <Loupe pixels={lens} hex={hex($current.rgb)} {at} bounds={{ w: stageW, h: stageH }} />
+      <Loupe
+        pixels={lens}
+        hex={hex($valueMode === 'raw' && $current.raw ? $current.raw : $current.rgb)}
+        {at}
+        bounds={{ w: stageW, h: stageH }} />
     {/if}
     {#if $calibrating}
       <!-- plain boxes at whole css pixels, no transform, opacity or anything on top, so the share sees them as drawn -->

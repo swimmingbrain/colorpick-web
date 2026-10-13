@@ -2,15 +2,15 @@
   import Icon from '$lib/icons/Icon.svelte';
   import { TOOL_INFO } from '$lib/editor/tools';
   import { activeTool, valueMode, zoom } from '$lib/stores/app';
-  import { calibration, frame, share, type Surface } from '$lib/stores/session';
+  import { activeCalibration, frame, share, type Surface } from '$lib/stores/session';
 
   const SURFACES: Record<Surface, string> = { monitor: 'Entire screen', window: 'Window', browser: 'Tab' };
 
   const sharing = $derived($share !== null);
   const source = $derived($share ? ($share.surface ? SURFACES[$share.surface] : 'Shared screen') : 'Nothing shared');
   const size = $derived($frame ?? $share);
-  // without a calibration there is nothing to correct, the values are raw
-  const values = $derived($calibration ? $valueMode : 'raw');
+  // without a calibration for this frame size there is nothing to correct, the values are raw
+  const values = $derived($activeCalibration ? $valueMode : 'raw');
 </script>
 
 <div class="stagebar">
@@ -59,8 +59,8 @@
         role="radio"
         class:on={values === 'corrected'}
         aria-checked={values === 'corrected'}
-        disabled={!sharing || $calibration === null}
-        title={$calibration ? 'Hover values with the calibration applied' : 'Calibrate first to correct the values'}
+        disabled={!sharing || $activeCalibration === null}
+        title={$activeCalibration ? 'Hover values with the calibration applied' : 'Calibrate first to correct the values'}
         onclick={() => valueMode.set('corrected')}>Corrected</button>
     </div>
     {#if sharing && $share}

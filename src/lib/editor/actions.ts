@@ -155,12 +155,19 @@ function eyedropper(): (new () => EyeDropperApi) | null {
   return (window as unknown as { EyeDropper?: new () => EyeDropperApi }).EyeDropper ?? null;
 }
 
-// a kept color shows in the color panel, goes first in the history and is the picked entry there
-export function keepColor(rgb: RGB, source: Source, corrected = false, residual: number | null = null) {
+// a kept color shows in the color panel, goes first in the history and is the picked entry there. a corrected one
+// keeps the raw value for the panel, the history keeps whether it was corrected and how far off the fit was
+export function keepColor(
+  rgb: RGB,
+  source: Source,
+  corrected = false,
+  residual: number | null = null,
+  raw: RGB | null = null
+) {
   const entry: HistoryEntry = { id: entryId(), kind: 'pixel', time: new Date().toISOString(), rgb, source, corrected, residual };
   addEntry(entry);
   selection.set(entry.id);
-  current.set({ rgb, raw: null, source, live: false });
+  current.set({ rgb, raw, source, live: false, id: entry.id });
   addToast(`Kept ${hex(rgb)}`, 'success', 2000);
 }
 

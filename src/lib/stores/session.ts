@@ -5,6 +5,7 @@ import { loadHistory, saveHistory, withEntry } from '$lib/core/history';
 import { loadArea, saveArea } from '$lib/core/area';
 import { loadCalibration, saveCalibration, type Calibration } from '$lib/core/calibrate';
 import type { PlainStats } from '$lib/core/stats';
+import { valueMode } from './app';
 
 // what the app knows about the share and what was read from it. frames stay in the capture module,
 // pixels never go into svelte state
@@ -66,6 +67,16 @@ export interface CurrentColor {
   raw: RGB | null;
   source: Source;
   // read under the pointer right now and not kept yet
+  live: boolean;
+  // the history entry it was kept as
+  id?: string;
+}
+
+// what the color panel shows big, with the other value of a corrected pair muted under it
+export interface ShownColor {
+  rgb: RGB;
+  alt: { label: 'raw' | 'corrected'; rgb: RGB } | null;
+  source: Source;
   live: boolean;
 }
 
@@ -168,11 +179,17 @@ export const selectedEntry = derived([history, selection], ([$history, $selectio
   $selection === null ? null : ($history.find((e) => e.id === $selection) ?? null)
 );
 
-// what the color panel shows: the pointer while it reads, else the entry picked in the history, else the last color
-export const shown = derived([current, selectedEntry], ([$current, $entry]): CurrentColor | null => {
-  if ($current?.live) return $current;
-  if ($entry) return { rgb: $entry.rgb, raw: null, source: $entry.source, live: false };
-  return $current;
+// what the color panel shows: the pointer while it reads, else the entry picked in the history, else the last color.
+// in raw mode a corrected pair shows the raw value first
+export const shown = derived([current, selectedEntry, valueMode], ([$current, $entry, $mode]): ShownColor | null => {
+  let c: CurrentColor | null = $current;
+  if (!$current?.live && $entry && $current?.id !== $entry.id) {
+    c = { rgb: $entry.rgb, raw: null, source: $entry.source, live: false };
+  }
+  if (!c) return null;
+  if (!c.raw) return { rgb: c.rgb, alt: null, source: c.source, live: c.live };
+  if ($mode === 'raw') return { rgb: c.raw, alt: { label: 'corrected', rgb: c.rgb }, source: 'screen', live: c.live };
+  return { rgb: c.rgb, alt: { label: 'raw', rgb: c.raw }, source: c.source, live: c.live };
 });
 
 // the pointer over the preview in frame pixels, with the raw rgb under it
