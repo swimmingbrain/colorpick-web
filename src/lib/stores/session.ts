@@ -2,6 +2,7 @@ import { derived, writable } from 'svelte/store';
 import { browser } from '$app/environment';
 import type { RGB } from '$lib/core/color';
 import { loadHistory, saveHistory, withEntry } from '$lib/core/history';
+import { loadArea, saveArea } from '$lib/core/area';
 
 // what the app knows about the share and what was read from it. frames stay in the capture module,
 // pixels never go into svelte state
@@ -72,7 +73,26 @@ export interface NormRect {
   h: number;
 }
 
-export const area = writable<NormRect | null>(null);
+// kept in this browser, the rectangle is back after a reload and on the next share
+function createArea() {
+  const store = writable<NormRect | null>(loadArea(storage()));
+  return {
+    subscribe: store.subscribe,
+    set(rect: NormRect | null) {
+      store.set(rect);
+      saveArea(storage(), rect);
+    },
+    update(fn: (rect: NormRect | null) => NormRect | null) {
+      store.update((rect) => {
+        const next = fn(rect);
+        saveArea(storage(), next);
+        return next;
+      });
+    }
+  };
+}
+
+export const area = createArea();
 
 export type Channel = 'r' | 'g' | 'b' | 'gray';
 export type PerChannel = Record<Channel, number>;
