@@ -2,6 +2,7 @@ import { get } from 'svelte/store';
 import { activeTool, addToast, dialog, zoom } from '$lib/stores/app';
 import { preferences, resetParts, setGroup } from '$lib/stores/preferences';
 import {
+  addEntry,
   area,
   clearEntries,
   current,
@@ -12,11 +13,13 @@ import {
   removeEntry,
   selection,
   share,
-  shown
+  shown,
+  type HistoryEntry,
+  type Source
 } from '$lib/stores/session';
-import { hex, rgbCss, type RGB } from '$lib/core/color';
+import { hex, parseHex, rgbCss, type RGB } from '$lib/core/color';
 import { onEnded, shareSupported, startShare, stopShare, trackSettings } from '$lib/core/share';
-import { historyCsv, historyJson } from '$lib/core/history';
+import { entryId, historyCsv, historyJson } from '$lib/core/history';
 import { lockOf, lockText, type ToolId } from './tools';
 import { keyLabel } from './keys';
 import type { ToolbarSide } from './settings';
@@ -117,8 +120,44 @@ export async function toggleShare() {
   }
 }
 
-export function pick() {
+// the dom library has no eyedropper yet, chromium browsers do
+interface EyeDropperApi {
+  open(): Promise<{ sRGBHex: string }>;
+}
+
+function eyedropper(): (new () => EyeDropperApi) | null {
+  return (window as unknown as { EyeDropper?: new () => EyeDropperApi }).EyeDropper ?? null;
+}
+
+// a kept color shows in the color panel, goes first in the history and is the picked entry there
+export function keepColor(rgb: RGB, source: Source, corrected = false, residual: number | null = null) {
+  const entry: HistoryEntry = { id: entryId(), kind: 'pixel', time: new Date().toISOString(), rgb, source, corrected, residual };
+  addEntry(entry);
+  selection.set(entry.id);
+  current.set({ rgb, raw: null, source, live: false });
+  addToast(`Kept ${hex(rgb)}`, 'success', 2000);
+}
+
+let dropping = false;
+
+export async function pick() {
   activeTool.set('pick');
+  const Dropper = eyedropper();
+  if (!Dropper) {
+    const instead = get(share) ? 'click the preview to keep a pixel' : 'share the screen and click the preview instead';
+    addToast(`This browser has no eyedropper, ${instead}`, 'info', 5000);
+    return;
+  }
+  if (dropping) return;
+  dropping = true;
+  try {
+    const rgb = parseHex((await new Dropper().open()).sRGBHex);
+    if (rgb) keepColor(rgb, 'eyedropper');
+  } catch {
+    // escape closes the eyedropper without a color, there is nothing to say
+  } finally {
+    dropping = false;
+  }
 }
 
 export function drawArea() {

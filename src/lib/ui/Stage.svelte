@@ -3,7 +3,7 @@
   import Logo from './Logo.svelte';
   import Loupe from './Loupe.svelte';
   import Icon from '$lib/icons/Icon.svelte';
-  import { keyName, tip, toggleShare } from '$lib/editor/actions';
+  import { keepColor, keyName, tip, toggleShare } from '$lib/editor/actions';
   import {
     attachVideo,
     block,
@@ -68,7 +68,7 @@
   let grabbing = false;
   let lastGrab = 0;
 
-  function local(e: PointerEvent): Point {
+  function local(e: MouseEvent): Point {
     const r = overlay!.getBoundingClientRect();
     return { x: e.clientX - r.left, y: e.clientY - r.top };
   }
@@ -140,6 +140,29 @@
   }
 
   // the color panel keeps the last value, it is just not live anymore
+  // a fresh frame for the pixel that is kept, the one read for hovering may be a moment old
+  async function keepPixel(at: Point) {
+    const img = (await grabFrame()) ?? latest;
+    if (!img) return;
+    latest = img;
+    const px = pixelUnder(at, img);
+    const rgb = px ? pixelAt(img, px.x, px.y) : null;
+    if (rgb) keepColor(rgb, 'screen');
+  }
+
+  function onclick(e: MouseEvent) {
+    if ($activeTool !== 'pick' || !view) return;
+    const p = local(e);
+    keepPixel(framePoint(view, p.x, p.y));
+  }
+
+  function onkeydown(e: KeyboardEvent) {
+    if ($activeTool === 'pick' && e.key === 'Enter' && cross) {
+      e.preventDefault();
+      keepPixel({ x: cross.x + 0.5, y: cross.y + 0.5 });
+    }
+  }
+
   function onpointerleave() {
     stopReading();
     pointer.set(null);
@@ -239,6 +262,10 @@
             class="overlay"
             class:picking={$activeTool === 'pick'}
             bind:this={overlay}
+            tabindex="0"
+            aria-label="Shared screen, click to keep the pixel under the pointer"
+            {onclick}
+            {onkeydown}
             {onpointermove}
             {onpointerleave}></canvas>
         </div>
