@@ -155,6 +155,13 @@ export const selectedEntry = derived([history, selection], ([$history, $selectio
   $selection === null ? null : ($history.find((e) => e.id === $selection) ?? null)
 );
 
+// what the color panel shows: the pointer while it reads, else the entry picked in the history, else the last color
+export const shown = derived([current, selectedEntry], ([$current, $entry]): CurrentColor | null => {
+  if ($current?.live) return $current;
+  if ($entry) return { rgb: $entry.rgb, raw: null, source: $entry.source, live: false };
+  return $current;
+});
+
 // the pointer over the preview in frame pixels, with the raw rgb under it
 export interface PointerInfo {
   x: number;

@@ -10,9 +10,9 @@ import {
   livePreview,
   pointer,
   removeEntry,
-  selectedEntry,
   selection,
-  share
+  share,
+  shown
 } from '$lib/stores/session';
 import { hex, rgbCss, type RGB } from '$lib/core/color';
 import { onEnded, shareSupported, startShare, stopShare, trackSettings } from '$lib/core/share';
@@ -51,9 +51,9 @@ function unlocked(id: ToolId): boolean {
   return false;
 }
 
-// the color the panel shows: under the pointer, else the entry picked in the history
+// the color the panel shows
 function shownColor(): RGB | null {
-  return get(current)?.rgb ?? get(selectedEntry)?.rgb ?? null;
+  return get(shown)?.rgb ?? null;
 }
 
 function copyText(text: string) {

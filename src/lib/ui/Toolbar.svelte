@@ -5,14 +5,14 @@
   import { hex } from '$lib/core/color';
   import { activeTool } from '$lib/stores/app';
   import { preferences } from '$lib/stores/preferences';
-  import { area, current, livePreview, selectedEntry, share } from '$lib/stores/session';
+  import { area, livePreview, share, shown as color } from '$lib/stores/session';
 
   const tools = TOOL_IDS.map((id) => TOOL_INFO[id]);
   const keys = $derived($preferences.shortcuts);
   const right = $derived($preferences.toolbar.side === 'right');
   const gate = $derived({ sharing: $share !== null, hasArea: $area !== null });
   // the color the panel shows, the chip at the bottom keeps it in view
-  const shown = $derived($current?.rgb ?? $selectedEntry?.rgb ?? null);
+  const shown = $derived($color?.rgb ?? null);
 
   function pressed(tool: ToolInfo): boolean | undefined {
     if (tool.kind === 'mode') return $activeTool === tool.id;

@@ -4,44 +4,37 @@
   import { gray, hex, hslText, rgbText, textOn } from '$lib/core/color';
   import { copyHex, keyName, tip } from '$lib/editor/actions';
   import { preferences } from '$lib/stores/preferences';
-  import { current, selectedEntry } from '$lib/stores/session';
+  import { shown } from '$lib/stores/session';
 
   const keys = $derived($preferences.shortcuts);
-  // the pointer wins while it hovers, otherwise the entry picked in the history
-  const shown = $derived(
-    $current ??
-      ($selectedEntry
-        ? { rgb: $selectedEntry.rgb, raw: null, source: $selectedEntry.source, live: false }
-        : null)
-  );
   const pickKey = $derived(keyName('tool.pick', keys));
 </script>
 
 <Panel
   icon="eyedropper"
-  empty={shown
+  empty={$shown
     ? undefined
     : `Hover the shared screen or pick with the eyedropper${pickKey ? ` (${pickKey})` : ''} to see a color here.`}>
-  {#if shown}
-    <div class="swatch" style="background: {hex(shown.rgb)}; color: {textOn(shown.rgb)}">
-      {#if shown.live}<span class="tag">live</span>{/if}
+  {#if $shown}
+    <div class="swatch" style="background: {hex($shown.rgb)}; color: {textOn($shown.rgb)}">
+      {#if $shown.live}<span class="tag">live</span>{/if}
     </div>
     <div class="hex-row">
-      <button class="hex" title={tip('Copy the hex', 'edit.copy-hex', keys)} onclick={copyHex}>{hex(shown.rgb)}</button>
-      <span class="badge" class:corrected={shown.source === 'screen corrected'}>{shown.source}</span>
+      <button class="hex" title={tip('Copy the hex', 'edit.copy-hex', keys)} onclick={copyHex}>{hex($shown.rgb)}</button>
+      <span class="badge" class:corrected={$shown.source === 'screen corrected'}>{$shown.source}</span>
     </div>
-    {#if shown.raw}
-      <p class="raw" title="What the share delivered before the calibration">raw {hex(shown.raw)}, {rgbText(shown.raw)}</p>
+    {#if $shown.raw}
+      <p class="raw" title="What the share delivered before the calibration">raw {hex($shown.raw)}, {rgbText($shown.raw)}</p>
     {/if}
     <h3 class="section">Values</h3>
     <Field label="RGB" hint="Red, green and blue from 0 to 255">
-      <span class="value">{rgbText(shown.rgb)}</span>
+      <span class="value">{rgbText($shown.rgb)}</span>
     </Field>
     <Field label="HSL" hint="Hue in degrees, saturation and lightness in percent">
-      <span class="value">{hslText(shown.rgb)}</span>
+      <span class="value">{hslText($shown.rgb)}</span>
     </Field>
     <Field label="Gray" hint="The brightness as one number from 0 to 255, the rec 601 luma">
-      <span class="value">{gray(shown.rgb)}</span>
+      <span class="value">{gray($shown.rgb)}</span>
     </Field>
   {/if}
 </Panel>
