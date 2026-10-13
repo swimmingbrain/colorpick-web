@@ -5,7 +5,6 @@
   import Icon from '$lib/icons/Icon.svelte';
   import { keepColor, keyName, tip, toggleShare } from '$lib/editor/actions';
   import {
-    attachVideo,
     block,
     fitView,
     framePoint,
@@ -96,10 +95,7 @@
       crosshair: token('--crosshair', colors.crosshair),
       deep: token('--bg-deep', colors.deep)
     };
-    return () => {
-      stopReading();
-      attachVideo(null);
-    };
+    return () => stopReading();
   });
 
   // the latest frame stays out of svelte state, only what was read from it goes into the stores
@@ -293,7 +289,7 @@
     }
   });
 
-  // the video plays the stream of the share and is the source the frames are read from
+  // the video only shows the stream, the frames are read through the capture module
   $effect(() => {
     if (!video) return;
     const stream = $share ? currentStream() : null;
@@ -301,7 +297,6 @@
       video.srcObject = stream;
       if (stream) video.play().catch(() => {});
     }
-    attachVideo(stream ? video : null);
   });
 
   // the frame size comes from the video itself, the track settings can be off before the first frame

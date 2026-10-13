@@ -1,4 +1,7 @@
 import type { RGB } from './color';
+import { grabFrame as grabShare, grabRegion as grabShareRegion, type GrabOptions } from './capture';
+import { currentShare } from './share';
+import type { Rect } from './types';
 
 // frame access for the stage, plus the geometry between the stage in css pixels and the frame in its own pixels
 
@@ -28,31 +31,27 @@ export const MAX_READS = 10;
 export const LOUPE_PIXELS = 11;
 export const LOUPE_SCALE = 8;
 
-let source: HTMLVideoElement | null = null;
-let canvas: HTMLCanvasElement | null = null;
-let context: CanvasRenderingContext2D | null = null;
-
-// the stage hands over its video element, null when it goes
-export function attachVideo(video: HTMLVideoElement | null) {
-  source = video;
+// the latest frame of the share at full size, null without a share or when no frame came. fresh waits for one
+// that arrives after the call
+export async function grabFrame(options: GrabOptions = {}): Promise<ImageData | null> {
+  const share = currentShare();
+  if (!share) return null;
+  try {
+    return await grabShare(share, options);
+  } catch {
+    return null;
+  }
 }
 
-// the latest frame of the share at full size, null before the first one. the only function that reads the
-// video, a measured frame reader can take its place without the stage noticing
-export async function grabFrame(): Promise<ImageData | null> {
-  const video = source;
-  if (!video || video.readyState < 2 || !video.videoWidth || !video.videoHeight) return null;
-  const w = video.videoWidth;
-  const h = video.videoHeight;
-  canvas ??= document.createElement('canvas');
-  if (canvas.width !== w || canvas.height !== h) {
-    canvas.width = w;
-    canvas.height = h;
+// a rectangle of the latest frame in frame pixels, clamped to the frame
+export async function grabRegion(rect: Rect, options: GrabOptions = {}): Promise<ImageData | null> {
+  const share = currentShare();
+  if (!share) return null;
+  try {
+    return await grabShareRegion(share, rect, options);
+  } catch {
+    return null;
   }
-  context ??= canvas.getContext('2d', { willReadFrequently: true, colorSpace: 'srgb' });
-  if (!context) return null;
-  context.drawImage(video, 0, 0, w, h);
-  return context.getImageData(0, 0, w, h);
 }
 
 // how long to wait between two frame reads, the share rate but never more than ten a second
