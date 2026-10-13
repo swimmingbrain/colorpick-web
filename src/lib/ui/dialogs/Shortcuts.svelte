@@ -11,13 +11,20 @@
     what: string;
   }
 
-  // what the pointer and the arrows do on the stage and the histogram, these have no command of their own
+  // what the pointer does on the stage, and the keys the preview and the histogram take while they have the focus.
+  // these have no command of their own
   const POINTER: Shortcut[] = [
     { keys: ['Click'], what: 'Keep the pixel under the pointer, with Pick' },
     { keys: ['Drag'], what: 'Draw an area on the preview, with Area' },
     { keys: ['Drag inside'], what: 'Move the area' },
-    { keys: ['Drag a handle'], what: 'Resize the area' },
-    { keys: ['Left', 'Right'], what: 'Move the cursor bin of the histogram that has the focus' }
+    { keys: ['Drag a handle'], what: 'Resize the area' }
+  ];
+
+  const FOCUSED: Shortcut[] = [
+    { keys: ['Enter'], what: 'Keep the pixel under the crosshair' },
+    { keys: ['Arrows'], what: 'Move the area a frame pixel, ten with Shift' },
+    { keys: ['Left', 'Right'], what: 'Move the cursor bin of the histogram, ten with Shift' },
+    { keys: ['Home', 'End'], what: 'Jump to the first or the last bin' }
   ];
 
   // the commands that have a key, in the groups of the command list, the keys in use
@@ -34,6 +41,7 @@
       group.items.push({ keys: keys.map(keyLabel), what: cmd.label });
     }
     out.push({ name: 'Pointer', items: POINTER });
+    out.push({ name: 'Preview and histogram', items: FOCUSED });
     return out;
   });
 </script>
