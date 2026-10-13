@@ -3,6 +3,7 @@ import { browser } from '$app/environment';
 import type { RGB } from '$lib/core/color';
 import { loadHistory, saveHistory, withEntry } from '$lib/core/history';
 import { loadArea, saveArea } from '$lib/core/area';
+import type { PlainStats } from '$lib/core/stats';
 
 // what the app knows about the share and what was read from it. frames stay in the capture module,
 // pixels never go into svelte state
@@ -94,24 +95,10 @@ function createArea() {
 
 export const area = createArea();
 
-export type Channel = 'r' | 'g' | 'b' | 'gray';
-export type PerChannel = Record<Channel, number>;
+export type { Channel, PerChannel } from '$lib/core/stats';
 
 // the statistics of an area with plain arrays, ready for json and local storage
-export interface AreaStats {
-  width: number;
-  height: number;
-  count: number;
-  // 256 bins per channel
-  hist: Record<Channel, number[]>;
-  mean: PerChannel;
-  median: PerChannel;
-  std: PerChannel;
-  min: PerChannel;
-  max: PerChannel;
-  // the most common color, rounded to 8 steps per channel
-  dominant: RGB;
-}
+export type AreaStats = PlainStats;
 
 export interface Capture {
   // a small png of the area as a data url
