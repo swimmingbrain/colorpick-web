@@ -24,8 +24,8 @@
       </div>
     </div>
     <p class="pitch">
-      Pick any pixel of a shared screen, measure an area and calibrate the share so the colors come out exact.
-      Everything happens on this machine, nothing is uploaded.
+      Pick any pixel on the screen, measure an area with its histogram and calibrate the share so the colors come
+      out exact. Everything happens on this machine, nothing is uploaded.
     </p>
     <div class="links">
       <a href="https://color.swimmingbrain.dev" target="_blank" rel="noopener">color.swimmingbrain.dev</a>
