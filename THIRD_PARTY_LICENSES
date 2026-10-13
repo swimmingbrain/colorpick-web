@@ -1,6 +1,6 @@
-brainPICK bundles the following libraries. Each keeps its own license, the texts are in
-node_modules/<package>/LICENSE after an install. Versions are the ones this repository
-installs from package.json, checked against the installed packages.
+brainPICK bundles one library. It keeps its own license, the text is in
+node_modules/<package>/LICENSE after an install. The version is the one this repository
+installs from package.json, checked against the installed package.
 
 tinykeys 4.0.1: the keyboard shortcuts
 MIT
