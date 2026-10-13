@@ -3,11 +3,20 @@
   import Logo from './Logo.svelte';
   import Icon from '$lib/icons/Icon.svelte';
   import { keyName, tip, toggleShare } from '$lib/editor/actions';
-  import { attachVideo, fitView } from '$lib/core/frames';
+  import {
+    attachVideo,
+    fitView,
+    framePoint,
+    grabFrame,
+    pixelAt,
+    pixelUnder,
+    readInterval,
+    type Point
+  } from '$lib/core/frames';
   import { currentStream } from '$lib/core/share';
-  import { zoom } from '$lib/stores/app';
+  import { activeTool, zoom } from '$lib/stores/app';
   import { preferences } from '$lib/stores/preferences';
-  import { livePreview, share } from '$lib/stores/session';
+  import { current, frame, livePreview, pointer, share } from '$lib/stores/session';
 
   const keys = $derived($preferences.shortcuts);
   const pickKey = $derived(keyName('tool.pick', keys));
@@ -22,9 +31,113 @@
   const size = $derived($share && $share.width > 0 && $share.height > 0 ? $share : null);
   const view = $derived(size ? fitView(size, { width: stageW, height: stageH }, $zoom, dpr) : null);
 
+  // canvases cannot read css variables, the tokens are read once
+  let colors = { area: '#d19a66', fill: 'rgba(209, 154, 102, 0.08)', crosshair: 'rgba(255, 255, 255, 0.55)' };
+
   onMount(() => {
     dpr = window.devicePixelRatio || 1;
-    return () => attachVideo(null);
+    const css = getComputedStyle(document.documentElement);
+    const token = (name: string, fallback: string) => css.getPropertyValue(name).trim() || fallback;
+    colors = {
+      area: token('--area', colors.area),
+      fill: token('--area-fill', colors.fill),
+      crosshair: token('--crosshair', colors.crosshair)
+    };
+    return () => {
+      stopReading();
+      attachVideo(null);
+    };
+  });
+
+  // the latest frame stays out of svelte state, only what was read from it goes into the stores
+  let latest: ImageData | null = null;
+  // the pointer in frame pixels while it is over the frame
+  let hover: Point | null = null;
+  // the whole pixel under the pointer, the crosshair marks it
+  let cross: Point | null = $state(null);
+  let timer: ReturnType<typeof setTimeout> | null = null;
+  let raf = 0;
+  let grabbing = false;
+  let lastGrab = 0;
+
+  function local(e: PointerEvent): Point {
+    const r = overlay!.getBoundingClientRect();
+    return { x: e.clientX - r.left, y: e.clientY - r.top };
+  }
+
+  // frames are read at the share rate while the pointer is over the stage, so a still pointer sees the screen change
+  function schedule() {
+    if (timer || grabbing || !$share) return;
+    const wait = Math.max(0, lastGrab + readInterval($share.fps) - performance.now());
+    timer = setTimeout(grab, wait);
+  }
+
+  async function grab() {
+    timer = null;
+    if (!hover) return;
+    grabbing = true;
+    lastGrab = performance.now();
+    try {
+      const img = await grabFrame();
+      if (img) {
+        latest = img;
+        frame.set({ width: img.width, height: img.height, time: Date.now() });
+      }
+    } finally {
+      grabbing = false;
+    }
+    read();
+    if (hover) schedule();
+  }
+
+  // one read per animation frame at most, however fast the pointer moves
+  function requestRead() {
+    if (!raf) raf = requestAnimationFrame(read);
+  }
+
+  function read() {
+    raf = 0;
+    if (!hover || !latest) return;
+    const px = pixelUnder(hover, latest);
+    const rgb = px ? pixelAt(latest, px.x, px.y) : null;
+    if (!px || !rgb) return;
+    const was = $pointer;
+    const same = was && was.x === px.x && was.y === px.y && was.rgb.r === rgb.r && was.rgb.g === rgb.g && was.rgb.b === rgb.b;
+    if (same && $current?.live) return;
+    pointer.set({ x: px.x, y: px.y, rgb });
+    current.set({ rgb, raw: null, source: 'screen', live: true });
+  }
+
+  function stopReading() {
+    if (timer) clearTimeout(timer);
+    if (raf) cancelAnimationFrame(raf);
+    timer = null;
+    raf = 0;
+    hover = null;
+    cross = null;
+  }
+
+  function onpointermove(e: PointerEvent) {
+    if (!view || !size) return;
+    const p = local(e);
+    hover = framePoint(view, p.x, p.y);
+    cross = pixelUnder(hover, size);
+    requestRead();
+    schedule();
+  }
+
+  // the color panel keeps the last value, it is just not live anymore
+  function onpointerleave() {
+    stopReading();
+    pointer.set(null);
+    current.update((c) => (c?.live ? { ...c, live: false } : c));
+  }
+
+  $effect(() => {
+    if (!$share) {
+      stopReading();
+      latest = null;
+    }
   });
 
   // the video plays the stream of the share and is the source the frames are read from
@@ -46,6 +159,33 @@
     share.update((s) => (s && (s.width !== w || s.height !== h) ? { ...s, width: w, height: h } : s));
   }
 
+  function drawCross(ctx: CanvasRenderingContext2D, px: Point, scale: number) {
+    // the middle of the pixel in device pixels, on a half pixel so the lines stay one pixel wide
+    const cx = Math.round((px.x + 0.5) * scale * dpr) + 0.5;
+    const cy = Math.round((px.y + 0.5) * scale * dpr) + 0.5;
+    const gap = Math.round(Math.max(4, (scale * dpr) / 2 + 3));
+    const arm = Math.round(12 * dpr);
+    const lines = () => {
+      ctx.beginPath();
+      ctx.moveTo(cx - gap - arm, cy);
+      ctx.lineTo(cx - gap, cy);
+      ctx.moveTo(cx + gap, cy);
+      ctx.lineTo(cx + gap + arm, cy);
+      ctx.moveTo(cx, cy - gap - arm);
+      ctx.lineTo(cx, cy - gap);
+      ctx.moveTo(cx, cy + gap);
+      ctx.lineTo(cx, cy + gap + arm);
+      ctx.stroke();
+    };
+    // a dark line under the light one, so the cross shows on white and on black
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = 'rgba(0, 0, 0, 0.45)';
+    lines();
+    ctx.lineWidth = 1;
+    ctx.strokeStyle = colors.crosshair;
+    lines();
+  }
+
   // the overlay draws in device pixels so its lines stay sharp
   $effect(() => {
     if (!overlay || !view) return;
@@ -53,6 +193,10 @@
     const h = Math.max(1, Math.round(view.h * dpr));
     if (overlay.width !== w) overlay.width = w;
     if (overlay.height !== h) overlay.height = h;
+    const ctx = overlay.getContext('2d');
+    if (!ctx) return;
+    ctx.clearRect(0, 0, w, h);
+    if (cross && $activeTool === 'pick') drawCross(ctx, cross, view.scale);
   });
 </script>
 
@@ -78,7 +222,12 @@
           {#if !$livePreview}
             <p class="off">Live preview is off, the screen is still read{liveKey ? ` (${liveKey})` : ''}</p>
           {/if}
-          <canvas class="overlay" bind:this={overlay}></canvas>
+          <canvas
+            class="overlay"
+            class:picking={$activeTool === 'pick'}
+            bind:this={overlay}
+            {onpointermove}
+            {onpointerleave}></canvas>
         </div>
       </div>
     </div>
@@ -157,6 +306,11 @@
     height: 100%;
     touch-action: none;
     will-change: transform;
+  }
+
+  /* the drawn cross is the pointer while picking */
+  .overlay.picking {
+    cursor: none;
   }
 
   .empty {
