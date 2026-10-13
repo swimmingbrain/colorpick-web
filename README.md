@@ -10,6 +10,10 @@
 </p>
 
 <p align="center">
+  <img src="docs/screenshot.png" alt="brainPICK with a calibrated screen share, the loupe on a coral swatch, the statistics and the histogram of a sunset gradient and four colors in the history" width="800" />
+</p>
+
+<p align="center">
   <a href="https://color.swimmingbrain.dev"><strong>Try it now &rarr; color.swimmingbrain.dev</strong></a>
 </p>
 
@@ -21,7 +25,7 @@ brainPICK is an open source app for picking colors off the screen, like Digital 
 - Share a screen, a window or a tab and hover it, a loupe shows the pixels under the pointer
 - Draw an area and read its mean, median, spread, darkest and brightest value and its most common color
 - A histogram for red, green, blue and gray, on a log scale if you like, with the mean and the median marked
-- A calibration card that measures how the share shifts colors and corrects every value after it
+- A calibration that measures how the share shifts colors and corrects every value after it
 - A history of picks and areas in this browser, exported as JSON or CSV
 - Keys for every tool and a command palette
 - Works offline once it has been opened
@@ -40,6 +44,16 @@ brainPICK is an open source app for picking colors off the screen, like Digital 
 | `Ctrl+K` | Command palette |
 | `?` | All shortcuts |
 
+## How the calibration works
+
+A screen share does not hand over the exact colors of the screen. The browser adjusts colors to the monitor and the share turns the frames into video and back, so a color can come out several steps off. Calibrate (`K`) shows a card of 56 known colors on the stage for a moment, reads it back through the share and fits a correction to the difference, with 16 of the colors kept out of the fit to check it. The correction then applies to hover values, picks from the preview and area statistics, never to the eyedropper, which reads the screen itself.
+
+On the monitor it was measured on, the error of those 16 colors went from mean 4 and max 33 to mean 0.6 and max 2. Fully saturated primaries the monitor cannot show stay off, no correction brings them back.
+
+## Privacy
+
+Everything stays in this browser. The shared frames are read in the tab and never leave it, nothing is recorded or uploaded. The history, the calibration and the settings are kept in localStorage. After the page has loaded the app sends nothing to anyone, the fonts come with it. The open tab only asks its own site now and then whether a new version is out. [docs/SECURITY.md](docs/SECURITY.md) has the details.
+
 ## Running locally
 
 ```bash
@@ -48,14 +62,6 @@ pnpm dev
 ```
 
 Open `http://localhost:5173`. `pnpm test` runs the tests, `pnpm check` the type checks and `pnpm build` writes the static site to `build/`. See [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md) if you want to help.
-
-## How it works
-
-- The screen comes in through the browser's own share dialog. The frames are read in the tab and never leave its memory.
-- Hovering reads the pixel under the pointer from the latest frame. An area is cut out of a fresh frame and measured in one pass, with 256 bins per channel for the histogram.
-- The calibration shows a card of known colors on the stage, reads it back through the share and fits a correction to the difference. Patches the fit never sees tell how far off the colors still are.
-- The eyedropper is the one the browser has built in. It reads the screen itself, so its colors need no correction.
-- The history, the calibration and the settings are kept in localStorage, nothing is sent anywhere.
 
 ## Tech stack
 
