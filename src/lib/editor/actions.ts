@@ -4,6 +4,7 @@ import { preferences, resetParts, setGroup } from '$lib/stores/preferences';
 import {
   addEntry,
   area,
+  calibration,
   clearEntries,
   current,
   frame,
@@ -20,7 +21,7 @@ import {
 import { hex, parseHex, rgbCss, type RGB } from '$lib/core/color';
 import { onEnded, shareSupported, startShare, stopShare, trackSettings } from '$lib/core/share';
 import { entryId, historyCsv, historyJson } from '$lib/core/history';
-import { lockOf, lockText, type ToolId } from './tools';
+import { calibrationStatus, lockOf, lockText, type ToolId } from './tools';
 import { keyLabel } from './keys';
 import type { ToolbarSide } from './settings';
 
@@ -85,6 +86,15 @@ onEnded(() => {
 });
 
 let starting = false;
+let hinted = false;
+
+// once in a session at most, and only while nothing is stored for this frame size
+function hintCalibration() {
+  if (hinted || calibrationStatus(get(calibration), get(share)) === 'ready') return;
+  hinted = true;
+  const key = keyName('tool.calibrate');
+  addToast(`Calibrate once so the colors come out exact${key ? ` (${key})` : ''}`, 'info', 6000);
+}
 
 export function stopSharing() {
   if (!get(share)) return;
@@ -108,6 +118,7 @@ export async function toggleShare() {
   try {
     await startShare(fps);
     share.set(trackSettings(fps) ?? { width: 0, height: 0, surface: null, fps });
+    hintCalibration();
   } catch (err) {
     // closing the browser's picker rejects too, that is no error
     if (err instanceof DOMException && (err.name === 'NotAllowedError' || err.name === 'AbortError')) {
