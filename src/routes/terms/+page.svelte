@@ -44,7 +44,7 @@
 
     <h2>Accuracy</h2>
     <p>
-      The colors brainPICK shows are the values your browser hands over from the share or from its eyedropper,
+      The colors brainPICK shows are the values your browser hands over from its eyedropper, or from the share,
       corrected by the calibration when there is one. They are provided for reference, without any guarantee
       that they match a color standard, a printed sample or a measuring device.
     </p>
