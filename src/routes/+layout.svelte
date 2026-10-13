@@ -8,6 +8,7 @@
   import '@fontsource/jetbrains-mono/latin-500.css';
   import '@fontsource/instrument-serif/latin-400-italic.css';
   import '../app.css';
+  import Toast from '$lib/ui/Toast.svelte';
   import { onMount } from 'svelte';
   import { browser, dev } from '$app/environment';
   import { beforeNavigate } from '$app/navigation';
@@ -37,3 +38,4 @@
 </script>
 
 {@render children()}
+<Toast />
