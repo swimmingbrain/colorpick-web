@@ -1,19 +1,23 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import Logo from './Logo.svelte';
+  import Loupe from './Loupe.svelte';
   import Icon from '$lib/icons/Icon.svelte';
   import { keyName, tip, toggleShare } from '$lib/editor/actions';
   import {
     attachVideo,
+    block,
     fitView,
     framePoint,
     grabFrame,
     pixelAt,
     pixelUnder,
     readInterval,
+    type Pixels,
     type Point
   } from '$lib/core/frames';
   import { currentStream } from '$lib/core/share';
+  import { hex } from '$lib/core/color';
   import { activeTool, zoom } from '$lib/stores/app';
   import { preferences } from '$lib/stores/preferences';
   import { current, frame, livePreview, pointer, share } from '$lib/stores/session';
@@ -55,6 +59,10 @@
   let hover: Point | null = null;
   // the whole pixel under the pointer, the crosshair marks it
   let cross: Point | null = $state(null);
+  // the loupe follows the pointer in stage pixels and shows the pixels around it
+  let at: Point | null = $state(null);
+  let lens: Pixels | null = $state.raw(null);
+  let stageEl: HTMLElement | undefined = $state();
   let timer: ReturnType<typeof setTimeout> | null = null;
   let raf = 0;
   let grabbing = false;
@@ -101,6 +109,7 @@
     const px = pixelUnder(hover, latest);
     const rgb = px ? pixelAt(latest, px.x, px.y) : null;
     if (!px || !rgb) return;
+    lens = block(latest, px.x, px.y);
     const was = $pointer;
     const same = was && was.x === px.x && was.y === px.y && was.rgb.r === rgb.r && was.rgb.g === rgb.g && was.rgb.b === rgb.b;
     if (same && $current?.live) return;
@@ -115,6 +124,8 @@
     raf = 0;
     hover = null;
     cross = null;
+    at = null;
+    lens = null;
   }
 
   function onpointermove(e: PointerEvent) {
@@ -122,6 +133,8 @@
     const p = local(e);
     hover = framePoint(view, p.x, p.y);
     cross = pixelUnder(hover, size);
+    const s = stageEl!.getBoundingClientRect();
+    at = { x: e.clientX - s.left, y: e.clientY - s.top };
     requestRead();
     schedule();
   }
@@ -202,7 +215,7 @@
 
 <svelte:window onresize={() => (dpr = window.devicePixelRatio || 1)} />
 
-<section class="stage" aria-label="Stage" bind:clientWidth={stageW} bind:clientHeight={stageH}>
+<section class="stage" aria-label="Stage" bind:this={stageEl} bind:clientWidth={stageW} bind:clientHeight={stageH}>
   {#if $share}
     <div class="scroller" class:actual={$zoom === 'actual'}>
       <div class="content" style="width: {view?.contentW ?? 0}px; height: {view?.contentH ?? 0}px">
@@ -231,6 +244,9 @@
         </div>
       </div>
     </div>
+    {#if $preferences.stage.loupe && at && lens && $current}
+      <Loupe pixels={lens} hex={hex($current.rgb)} {at} bounds={{ w: stageW, h: stageH }} />
+    {/if}
   {:else}
     <div class="empty">
       <span class="mark"><Logo size={40} /></span>
