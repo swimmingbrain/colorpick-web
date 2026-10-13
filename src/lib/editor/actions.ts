@@ -5,14 +5,17 @@ import {
   area,
   clearEntries,
   current,
+  frame,
   history,
   livePreview,
+  pointer,
   removeEntry,
   selectedEntry,
   selection,
   share
 } from '$lib/stores/session';
 import { hex, rgbCss, type RGB } from '$lib/core/color';
+import { onEnded, shareSupported, startShare, stopShare, trackSettings } from '$lib/core/share';
 import { lockOf, lockText, type ToolId } from './tools';
 import { keyLabel } from './keys';
 import type { ToolbarSide } from './settings';
@@ -63,11 +66,53 @@ function copyText(text: string) {
     .catch(() => addToast('The clipboard could not be written', 'error', 4000));
 }
 
-// starting and ending the share is the capture module's part, here the browser is asked whether it can
-export function toggleShare() {
-  if (get(share)) return;
-  if (!navigator.mediaDevices?.getDisplayMedia) {
+// the session forgets the share and what was under the pointer, the history and the area stay
+function endSession() {
+  share.set(null);
+  frame.set(null);
+  pointer.set(null);
+  current.update((c) => (c?.live ? { ...c, live: false } : c));
+  activeTool.set('pick');
+}
+
+onEnded(() => {
+  endSession();
+  addToast('Sharing ended');
+});
+
+let starting = false;
+
+export function stopSharing() {
+  if (!get(share)) return;
+  stopShare();
+  endSession();
+}
+
+export async function toggleShare() {
+  if (get(share)) {
+    stopSharing();
+    return;
+  }
+  if (!shareSupported()) {
     addToast('This browser cannot share the screen, the eyedropper still works', 'warning', 5000);
+    return;
+  }
+  // a second key press while the browser's picker is open would ask twice
+  if (starting) return;
+  starting = true;
+  const fps = get(preferences).share.fps;
+  try {
+    await startShare(fps);
+    share.set(trackSettings(fps) ?? { width: 0, height: 0, surface: null, fps });
+  } catch (err) {
+    // closing the browser's picker rejects too, that is no error
+    if (err instanceof DOMException && (err.name === 'NotAllowedError' || err.name === 'AbortError')) {
+      addToast('The screen was not shared');
+    } else {
+      addToast('The screen could not be shared', 'error', 5000);
+    }
+  } finally {
+    starting = false;
   }
 }
 

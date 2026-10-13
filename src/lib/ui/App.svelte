@@ -11,6 +11,7 @@
   import Dialogs from './Dialogs.svelte';
   import { MAX_DOCK, MIN_DOCK, preferences, setGroup } from '$lib/stores/preferences';
   import { installShortcuts } from '$lib/editor/shortcuts';
+  import { stopSharing } from '$lib/editor/actions';
 
   // what the stage keeps at the least when the dock grows
   const MIN_STAGE_W = 320;
@@ -31,7 +32,14 @@
     setGroup('panels', { dockWidth: Math.max(MIN_DOCK, Math.min(dockWidth - delta, limit)) });
   }
 
-  onMount(() => installShortcuts());
+  onMount(() => {
+    const off = installShortcuts();
+    // leaving the editor ends the share, the browser would go on showing the screen as shared
+    return () => {
+      off();
+      stopSharing();
+    };
+  });
 </script>
 
 <div class="editor-app">
