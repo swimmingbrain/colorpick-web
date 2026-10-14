@@ -23,7 +23,7 @@ import {
 } from '$lib/stores/session';
 import { hex, parseHex, rgbCss, type RGB } from '$lib/core/color';
 import { currentShare, onEnded, shareSupported, startShare, stopShare, trackSettings } from '$lib/core/share';
-import { areaEntry, entryId, historyCsv, historyJson, thumbSize } from '$lib/core/history';
+import { THUMB_MAX, areaEntry, entryId, historyCsv, historyJson, thumbSize } from '$lib/core/history';
 import { toPixels } from '$lib/core/area';
 import { grabFrame, grabRegion, screenRect } from '$lib/core/frames';
 import {
@@ -205,13 +205,21 @@ export function drawArea() {
   if (unlocked('area')) activeTool.set('area');
 }
 
-// a jpeg of the area small enough for local storage, the pixels go through one canvas at full size first
-function thumbnail(img: ImageData): string {
-  const size = thumbSize(img.width, img.height);
+// the longer side of the panel preview, in pixels
+const PREVIEW_MAX = 1024;
+
+function onCanvas(img: ImageData): HTMLCanvasElement {
   const full = document.createElement('canvas');
   full.width = img.width;
   full.height = img.height;
   full.getContext('2d')?.putImageData(img, 0, 0);
+  return full;
+}
+
+// the area scaled to fit `max` on its longer side, as a data url
+function picture(full: HTMLCanvasElement, max: number, type: string, quality?: number): string {
+  const size = thumbSize(full.width, full.height, max);
+  if (size.w === full.width && size.h === full.height) return full.toDataURL(type, quality);
   const small = document.createElement('canvas');
   small.width = size.w;
   small.height = size.h;
@@ -219,8 +227,13 @@ function thumbnail(img: ImageData): string {
   if (!ctx) return '';
   ctx.imageSmoothingQuality = 'high';
   ctx.drawImage(full, 0, 0, size.w, size.h);
-  return small.toDataURL('image/jpeg', 0.85);
+  return small.toDataURL(type, quality);
 }
+
+// a jpeg small enough for local storage
+const thumbnail = (full: HTMLCanvasElement) => picture(full, THUMB_MAX, 'image/jpeg', 0.85);
+// a png for the panel, not stored
+const preview = (full: HTMLCanvasElement) => picture(full, PREVIEW_MAX, 'image/png');
 
 let capturing = false;
 
@@ -241,11 +254,18 @@ export async function captureArea() {
     const cal = get(activeCalibration);
     if (cal) applyCalibration(cal, img.data);
     const stats = toPlain(analyze(img));
+    const full = onCanvas(img);
     const entry = areaEntry(
-      { rect: norm, frame: { w: info.width, h: info.height }, thumbnail: thumbnail(img), stats },
+      { rect: norm, frame: { w: info.width, h: info.height }, thumbnail: thumbnail(full), stats },
       cal
     );
-    capture.set({ thumbnail: entry.area!.thumbnail, stats, corrected: entry.corrected, time: entry.time });
+    capture.set({
+      preview: preview(full),
+      thumbnail: entry.area!.thumbnail,
+      stats,
+      corrected: entry.corrected,
+      time: entry.time
+    });
     addEntry(entry);
     selection.set(entry.id);
     setGroup('panels', { topTab: 'area' });
