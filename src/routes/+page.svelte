@@ -5,7 +5,7 @@
   const features = [
     { title: 'Any pixel on the screen', text: 'Hover the shared screen and a loupe shows the pixels under the pointer, magnified, with the hex under it.' },
     { title: 'The eyedropper too', text: 'Pick works without sharing anything, through the eyedropper the browser has built in.' },
-    { title: 'Areas, measured', text: 'Draw a rectangle and read its mean, median, spread, darkest and brightest value and its most common color.' },
+    { title: 'Areas, measured', text: 'Draw a rectangle and read its mean, median, spread, darkest and brightest value and its most common color, in rgb or gray.' },
     { title: 'Histograms', text: 'Red, green, blue and gray in 256 bins, on a log scale if you like, with the mean and the median marked.' },
     { title: 'Calibrated colors', text: 'A screen share shifts colors by a few steps. One calibration measures by how much, then every value read from the share is corrected.' },
     { title: 'A history to keep', text: 'Every pick and every area stays in this browser, ready to copy or to export as JSON or CSV.' },

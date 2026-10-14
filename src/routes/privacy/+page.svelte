@@ -51,8 +51,8 @@
     </p>
     <p>
       <strong>localStorage</strong> holds four keys. <code>brainpick:preferences</code> keeps your settings: the
-      side of the toolbar, the panel sizes and tabs, the loupe, the channels and the scale of the histogram, the
-      frame rate of the share and the commands you ran last in the palette.
+      side of the toolbar, the panel sizes and tabs, the loupe, the values of the area statistics, the channels
+      and the scale of the histogram, the frame rate of the share and the commands you ran last in the palette.
       <code>brainpick:history</code> keeps the colors and areas you choose to keep, up to 500 of them, each with
       its value, the time, where it came from, and for an area a small picture and its statistics.
       <code>brainpick:calibration</code> keeps the correction measured from the calibration card, the frame size

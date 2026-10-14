@@ -23,7 +23,7 @@ brainPICK is an open source app for picking colors off the screen, like Digital 
 
 - Pick any pixel on the screen with the eyedropper the browser has built in, no share needed
 - Share a screen, a window or a tab and hover it, a loupe shows the pixels under the pointer
-- Draw an area and read its mean, median, spread, darkest and brightest value and its most common color
+- Draw an area and read its mean, median, spread, darkest and brightest value and its most common color, in rgb or gray
 - A histogram for red, green, blue and gray, on a log scale if you like, with the mean and the median marked
 - A calibration that measures how the share shifts colors and corrects every value after it
 - A history of picks and areas in this browser, exported as JSON or CSV
