@@ -5,11 +5,15 @@
   import SelectField from '../../SelectField.svelte';
   import ToggleField from '../../ToggleField.svelte';
   import { preferences, setGroup } from '$lib/stores/preferences';
-  import { FRAME_RATES, type FrameRate } from '$lib/editor/settings';
+  import { FRAME_RATES, type FrameRate, type StatValues } from '$lib/editor/settings';
   import { COLOR_CHANNELS, names, normalizeChannels } from '$lib/core/histogram';
   import type { Channel } from '$lib/core/stats';
 
   const RATES = FRAME_RATES.map((fps) => ({ value: String(fps), label: `${fps} frames a second` }));
+  const VALUES = [
+    { value: 'rgb', label: 'Red, green and blue' },
+    { value: 'gray', label: 'Gray' }
+  ];
 
   const p = $derived($preferences);
 
@@ -53,6 +57,16 @@
 <Section title="Stage">
   <Field label="Loupe" hint="The magnified pixels next to the pointer">
     <ToggleField value={p.stage.loupe} label="Loupe" onchange={(v) => setGroup('stage', { loupe: v })} />
+  </Field>
+</Section>
+
+<Section title="Area" help="The chips next to the statistics change the same setting.">
+  <Field label="Values" hint="The statistics as red, green and blue, or as the gray value">
+    <SelectField
+      value={p.area.values}
+      options={VALUES}
+      label="Values the area statistics show"
+      onchange={(v) => setGroup('area', { values: v as StatValues })} />
   </Field>
 </Section>
 
