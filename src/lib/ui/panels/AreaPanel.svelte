@@ -8,18 +8,30 @@
   import { preferences, setGroup } from '$lib/stores/preferences';
   import { capture, selectedEntry, type AreaStats, type PerChannel } from '$lib/stores/session';
 
-  // the entry picked in the history wins, otherwise the latest capture
+  // the entry picked in the history wins with its stored thumbnail, otherwise the latest capture with its full
+  // size picture
   const shown = $derived.by(() => {
     const entry = $selectedEntry;
     if (entry?.area) {
-      return { thumbnail: entry.area.thumbnail, stats: entry.area.stats, corrected: entry.corrected, time: entry.time };
+      return { picture: entry.area.thumbnail, stats: entry.area.stats, corrected: entry.corrected, time: entry.time };
     }
     if ($capture) {
-      const { thumbnail, stats, corrected, time } = $capture;
-      return { thumbnail, stats, corrected, time };
+      const { preview, stats, corrected, time } = $capture;
+      return { picture: preview, stats, corrected, time };
     }
     return null;
   });
+
+  const MAX_HEIGHT = 260;
+  let frameWidth = $state(0);
+  let natural = $state({ w: 0, h: 0 });
+  // an enlarged picture shows whole pixels, a shrunk one is smoothed
+  const pixels = $derived(natural.w > 0 && Math.min(frameWidth / natural.w, MAX_HEIGHT / natural.h) > 1);
+
+  function loaded(e: Event) {
+    const img = e.currentTarget as HTMLImageElement;
+    natural = { w: img.naturalWidth, h: img.naturalHeight };
+  }
   const keys = $derived($preferences.shortcuts);
   const values = $derived($preferences.area.values);
   const areaKey = $derived(keyName('tool.area', keys));
@@ -67,8 +79,10 @@
       `${captureKey ? ` (${captureKey})` : ''} to read its colors.`}>
   {#if shown}
     <div class="head">
-      <img class="thumb" src={shown.thumbnail} alt="The captured area" />
-      <div class="size">
+      <div class="frame" bind:clientWidth={frameWidth}>
+        <img class="preview" class:pixels src={shown.picture} alt="The captured area" onload={loaded} />
+      </div>
+      <div class="meta">
         <span class="dims">{when(shown.time)}</span>
         <span class="badge" class:corrected={shown.corrected}>{shown.corrected ? 'screen corrected' : 'screen'}</span>
       </div>
@@ -111,25 +125,33 @@
 <style>
   .head {
     display: flex;
-    align-items: center;
-    gap: 10px;
+    flex-direction: column;
+    gap: 6px;
     padding: 2px 8px 6px;
   }
 
-  .thumb {
-    width: 64px;
-    height: 48px;
-    object-fit: contain;
+  .frame {
+    line-height: 0;
     background: var(--bg-deep);
     outline: 1px solid var(--border);
+  }
+
+  .preview {
+    display: block;
+    width: 100%;
+    max-height: 260px;
+    object-fit: contain;
+  }
+
+  .preview.pixels {
     image-rendering: pixelated;
   }
 
-  .size {
+  .meta {
     display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 4px;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
   }
 
   .dims {
