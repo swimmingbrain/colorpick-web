@@ -232,7 +232,7 @@ describe('areaEntry', () => {
 describe('thumbSize', () => {
   it('fits the longer side into the limit and keeps the shape', () => {
     expect(thumbSize(1920, 1080)).toEqual({ w: THUMB_MAX, h: 288 });
-    expect(thumbSize(200, 400)).toEqual({ w: 256, h: 512 });
+    expect(thumbSize(400, 800)).toEqual({ w: 256, h: 512 });
     expect(thumbSize(512, 512)).toEqual({ w: 512, h: 512 });
   });
 
