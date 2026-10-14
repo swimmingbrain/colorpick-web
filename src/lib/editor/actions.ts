@@ -260,6 +260,7 @@ export async function captureArea() {
       cal
     );
     capture.set({
+      id: entry.id,
       preview: preview(full),
       thumbnail: entry.area!.thumbnail,
       stats,

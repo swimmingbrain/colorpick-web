@@ -8,11 +8,11 @@
   import { preferences, setGroup } from '$lib/stores/preferences';
   import { capture, selectedEntry, type AreaStats, type PerChannel } from '$lib/stores/session';
 
-  // the entry picked in the history wins with its stored thumbnail, otherwise the latest capture with its full
-  // size picture
+  // an entry picked in the history shows its stored thumbnail, the latest capture its full size picture, also
+  // while its own entry is the picked one
   const shown = $derived.by(() => {
     const entry = $selectedEntry;
-    if (entry?.area) {
+    if (entry?.area && entry.id !== $capture?.id) {
       return { picture: entry.area.thumbnail, stats: entry.area.stats, corrected: entry.corrected, time: entry.time };
     }
     if ($capture) {

@@ -118,6 +118,8 @@ export type { Channel, PerChannel } from '$lib/core/stats';
 export type AreaStats = PlainStats;
 
 export interface Capture {
+  // the history entry it was kept as
+  id: string;
   // a png of the area at its size, up to 1024 px on the longer side, only in memory
   preview: string;
   // a small jpeg of the area as a data url, what the history keeps
