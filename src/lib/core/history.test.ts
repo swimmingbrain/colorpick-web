@@ -231,14 +231,14 @@ describe('areaEntry', () => {
 
 describe('thumbSize', () => {
   it('fits the longer side into the limit and keeps the shape', () => {
-    expect(thumbSize(1920, 1080)).toEqual({ w: THUMB_MAX, h: 90 });
-    expect(thumbSize(200, 400)).toEqual({ w: 80, h: 160 });
-    expect(thumbSize(160, 160)).toEqual({ w: 160, h: 160 });
+    expect(thumbSize(1920, 1080)).toEqual({ w: THUMB_MAX, h: 180 });
+    expect(thumbSize(200, 400)).toEqual({ w: 160, h: 320 });
+    expect(thumbSize(320, 320)).toEqual({ w: 320, h: 320 });
   });
 
   it('keeps a small area at its size and never gives zero', () => {
     expect(thumbSize(3, 3)).toEqual({ w: 3, h: 3 });
-    expect(thumbSize(5000, 3)).toEqual({ w: 160, h: 1 });
+    expect(thumbSize(5000, 3)).toEqual({ w: 320, h: 1 });
     expect(thumbSize(0, 10)).toEqual({ w: 1, h: 1 });
   });
 });

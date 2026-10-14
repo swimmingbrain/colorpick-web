@@ -39,7 +39,7 @@ export function withEntry(list: HistoryEntry[], entry: HistoryEntry, limit = HIS
 }
 
 // the longer side of an area thumbnail, in pixels
-export const THUMB_MAX = 160;
+export const THUMB_MAX = 320;
 
 // the thumbnail keeps the shape of the area, a small area keeps its size
 export function thumbSize(w: number, h: number, max = THUMB_MAX): { w: number; h: number } {
