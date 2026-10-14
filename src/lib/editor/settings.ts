@@ -9,10 +9,13 @@ export type DockTab = 'color' | 'area' | 'history' | 'calibration';
 export type ToolbarSide = 'left' | 'right';
 // frames per second the share is asked for, more costs more power
 export type FrameRate = 2 | 5 | 10;
+// the rows of the area statistics as red, green and blue or as the gray value
+export type StatValues = 'rgb' | 'gray';
 
 export const DOCK_TOP: DockTab[] = ['color', 'area'];
 export const DOCK_BOTTOM: DockTab[] = ['history', 'calibration'];
 export const FRAME_RATES: FrameRate[] = [2, 5, 10];
+export const STAT_VALUES: StatValues[] = ['rgb', 'gray'];
 
 export const RECENT_COMMANDS = 8;
 export const MIN_DOCK = 220;
@@ -25,6 +28,10 @@ export interface Preferences {
   stage: {
     // the magnified pixels next to the pointer
     loupe: boolean;
+  };
+  area: {
+    // rgb or gray, the chips next to the statistics heading change it too
+    values: StatValues;
   };
   histogram: {
     // gray alone or some of the color channels, the chips above the histogram change both
@@ -50,6 +57,7 @@ export function defaultPreferences(): Preferences {
   return {
     toolbar: { side: 'left' },
     stage: { loupe: true },
+    area: { values: 'rgb' },
     histogram: { channels: ['gray'], log: false },
     share: { fps: 5 },
     panels: { dockWidth: 280, dockSplit: 0.55, topTab: 'color', bottomTab: 'history' },
@@ -90,6 +98,7 @@ export function mergePreferences(stored: unknown): Preferences {
 
   p.toolbar.side = oneOf(p.toolbar.side, ['left', 'right'], 'left');
   p.share.fps = oneOf(p.share.fps, FRAME_RATES, defaults.share.fps);
+  p.area.values = oneOf(p.area.values, STAT_VALUES, defaults.area.values);
   p.histogram.channels = normalizeChannels(p.histogram.channels);
 
   const panels = p.panels;
