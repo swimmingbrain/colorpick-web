@@ -231,7 +231,7 @@ function picture(full: HTMLCanvasElement, max: number, type: string, quality?: n
 }
 
 // a jpeg small enough for local storage
-const thumbnail = (full: HTMLCanvasElement) => picture(full, THUMB_MAX, 'image/jpeg', 0.85);
+const thumbnail = (full: HTMLCanvasElement) => picture(full, THUMB_MAX, 'image/jpeg', 0.9);
 // a png for the panel, not stored
 const preview = (full: HTMLCanvasElement) => picture(full, PREVIEW_MAX, 'image/png');
 
