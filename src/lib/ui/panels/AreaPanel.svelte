@@ -1,10 +1,11 @@
 <script lang="ts">
   import Panel from '../Panel.svelte';
   import Histogram from './Histogram.svelte';
-  import { hex, type RGB } from '$lib/core/color';
+  import { gray, hex, type RGB } from '$lib/core/color';
   import { thousands } from '$lib/core/histogram';
   import { keyName } from '$lib/editor/actions';
-  import { preferences } from '$lib/stores/preferences';
+  import { STAT_VALUES } from '$lib/editor/settings';
+  import { preferences, setGroup } from '$lib/stores/preferences';
   import { capture, selectedEntry, type AreaStats, type PerChannel } from '$lib/stores/session';
 
   // the entry picked in the history wins, otherwise the latest capture
@@ -20,11 +21,17 @@
     return null;
   });
   const keys = $derived($preferences.shortcuts);
+  const values = $derived($preferences.area.values);
   const areaKey = $derived(keyName('tool.area', keys));
   const captureKey = $derived(keyName('tool.capture', keys));
 
   function rgb(c: PerChannel): RGB {
     return { r: c.r, g: c.g, b: c.b };
+  }
+
+  // the gray value as a swatch
+  function level(v: number): RGB {
+    return { r: v, g: v, b: v };
   }
 
   function when(iso: string): string {
@@ -33,21 +40,21 @@
     return `captured ${d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}`;
   }
 
+  // a color row shows its rgb or its gray value, the chips next to the heading choose
   function rows(s: AreaStats) {
+    const color = (label: string, title: string, c: RGB, g: number) => ({ label, title, color: c, gray: g, text: '' });
+    const plain = (label: string, title: string, text: string) => ({ label, title, color: null, gray: null, text });
+    const std =
+      values === 'gray' ? s.std.gray.toFixed(1) : `${s.std.r.toFixed(1)} ${s.std.g.toFixed(1)} ${s.std.b.toFixed(1)}`;
     return [
-      { label: 'Mean', title: 'The average of all pixels', color: rgb(s.mean), text: '' },
-      { label: 'Median', title: 'The middle value, a few odd pixels do not move it', color: rgb(s.median), text: '' },
-      {
-        label: 'Std',
-        title: 'How far the pixels spread, 0 is a flat color',
-        color: null,
-        text: `${s.std.r.toFixed(1)} ${s.std.g.toFixed(1)} ${s.std.b.toFixed(1)}`
-      },
-      { label: 'Min', title: 'The darkest value per channel', color: rgb(s.min), text: '' },
-      { label: 'Max', title: 'The brightest value per channel', color: rgb(s.max), text: '' },
-      { label: 'Dominant', title: 'The most common color, rounded to 8 steps per channel', color: s.dominant, text: '' },
-      { label: 'Pixels', title: 'How many pixels the area holds', color: null, text: thousands(s.count) },
-      { label: 'Size', title: 'The width and height of the area in frame pixels', color: null, text: `${s.width} x ${s.height}` }
+      color('Mean', 'The average of all pixels', rgb(s.mean), s.mean.gray),
+      color('Median', 'The middle value, a few odd pixels do not move it', rgb(s.median), s.median.gray),
+      plain('Std', 'How far the pixels spread, 0 is a flat color', std),
+      color('Min', 'The darkest value per channel', rgb(s.min), s.min.gray),
+      color('Max', 'The brightest value per channel', rgb(s.max), s.max.gray),
+      color('Dominant', 'The most common color, rounded to 8 steps per channel', s.dominant, gray(s.dominant)),
+      plain('Pixels', 'How many pixels the area holds', thousands(s.count)),
+      plain('Size', 'The width and height of the area in frame pixels', `${s.width} x ${s.height}`)
     ];
   }
 </script>
@@ -66,12 +73,27 @@
         <span class="badge" class:corrected={shown.corrected}>{shown.corrected ? 'screen corrected' : 'screen'}</span>
       </div>
     </div>
-    <h3 class="section">Statistics</h3>
+    <div class="heading">
+      <h3 class="title">Statistics</h3>
+      <div class="group" role="group" aria-label="Values">
+        {#each STAT_VALUES as v (v)}
+          <button
+            class="choice"
+            class:on={values === v}
+            aria-pressed={values === v}
+            title={v === 'gray' ? 'The gray value of each row' : 'Red, green and blue of each row'}
+            onclick={() => setGroup('area', { values: v })}>{v}</button>
+        {/each}
+      </div>
+    </div>
     <ul class="rows">
       {#each rows(shown.stats) as row (row.label)}
         <li class="row">
           <span class="label" title={row.title}>{row.label}</span>
-          {#if row.color}
+          {#if row.color && row.gray !== null && values === 'gray'}
+            <span class="chip" style="background: {hex(level(row.gray))}"></span>
+            <span class="value">{row.gray}</span>
+          {:else if row.color}
             <span class="chip" style="background: {hex(row.color)}"></span>
             <span class="value">{hex(row.color)}</span>
             <span class="value muted">{Math.round(row.color.r)} {Math.round(row.color.g)} {Math.round(row.color.b)}</span>
@@ -140,6 +162,50 @@
     text-transform: uppercase;
     color: var(--text-muted);
     border-bottom: 1px solid var(--border);
+  }
+
+  .heading {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 6px;
+    margin: 8px 8px 4px;
+    padding-bottom: 4px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .title {
+    font-family: var(--font-editor);
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+
+  .group {
+    display: flex;
+    gap: 3px;
+  }
+
+  .choice {
+    padding: 0 6px;
+    font-family: var(--font-editor);
+    font-size: 10px;
+    line-height: 15px;
+    color: var(--text-muted);
+    background: var(--bg-deep);
+    border: 1px solid var(--border);
+  }
+
+  .choice:hover {
+    color: var(--text-primary);
+  }
+
+  .choice.on {
+    color: var(--accent);
+    background: var(--accent-dim);
+    border-color: rgba(209, 154, 102, 0.4);
   }
 
   .rows {
